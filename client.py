@@ -3,66 +3,29 @@ import sys  #for exit
 from check import ip_checksum
 import select
  
-# create dgram udp socket
+#create an INET, STREAMing socket
 try:
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 except socket.error:
     print 'Failed to create socket'
     sys.exit()
- 
-host = 'localhost';
+     
+print 'Socket Created'
+host = '';
 port = 8888;
-seqBit = 0 
-resend =False
+try:
+    remote_ip = socket.gethostbyname( host )
+ 
+except socket.gaierror:
+    #could not resolve
+    print 'Hostname could not be resolved. Exiting'
+    sys.exit()
+ 
+#Connect to remote server
+s.connect((remote_ip , port))
+print 'Welcome to pyTwit! Enter your username and password.\n' 
+uname = str(raw_input( 'username: ' ))
+pwd = str(raw_input( 'password: '))
 
-while(1) :
-    d = ""
-
-    if resend is False:
-   	 msg = raw_input(' Enter message to send : ')
-    
-   	 check = ip_checksum(msg)
-    	 msg = str(seqBit) +str(check) + msg  
-
-    try :
-        #Set the whole string 
-	s.sendto(msg, (host, port))
-         
-        # receive data from client (data, addr)
-        
-	readable, writeable, exceptional = select.select( [s] , [] , [s],5)
-	
-	for tempSock in readable:
-		d  =  tempSock.recvfrom(1024)
-	
-	if not readable:
-		print "message timed out-resending\n"
-		resend = True	
-
-	else:
-
-		 resend = False
-       		 reply = d[0]
-       		 addr = d[1]
-         
-        	 print 'Server reply : ' + reply
-
-
-		 #compare seqBit and checksum of server w/ reciver		
-		 comp = str(seqBit) + str(check) 
-	
-		 if comp  is not reply:
-			print 'sent = ' + comp +  ":recived  " +  reply
-			print "invalid seq"
-			
-		 else:		
-		
-		 	if seqBit is 0:
-				seqBit = 1
-		 	else:
-				seqBit = 0
-
-			 
-    except socket.error, msg:
-        	 print 'Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
-        	 sys.exit()
+s.sendall(uname)
+s.sendall(pwd)
