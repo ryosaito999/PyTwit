@@ -29,3 +29,8 @@ pwd = str(raw_input( 'password: '))
 
 s.sendall(uname)
 s.sendall(pwd)
+
+verifyMSG = s.recv(4096)
+print verifyMSG
+
+
