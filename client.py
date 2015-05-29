@@ -5,9 +5,45 @@ import select
 import time
 import os
 
+def runMenu(s):
+
+	sendInput = 9999
+
+	print '1. See Offline Messages. \n'
+	print '2. Edit subscriptions. \n '
+	print '3. Post new message. \n'
+	print '4. logout. \n'
+	print '5. Hashtag search. \n'
+
+	while sendInput > 6:
+		sendInput = int(raw_input(	'Please select action: ' ))
+		
+		if sendInput > 6:
+			print "Invalid input.\n"
+
+	s.send(str(sendInput))
+
+	if sendInput == 3:
+		tweet = postMessageRaw()
+		s.sendall(tweet)
+
+
+
+def postMessageRaw():
+
+	print 'Type a tweet under 140 characters! Press Enter twice to post.\n'
+
+	text = ""
+	stopword = ""
+	while True:
+	    line = raw_input()
+	    if line.strip() == stopword:
+	        break
+	    text += "%s\n" % line
+	return text
+
 
 userOK = False
-
 #create an INET, STREAMing socket
 try:
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,7 +76,6 @@ while userOK == False :
 	time.sleep(1)
 
 	vMsg = s.recv(1024)
-	time.sleep(1)
 
 
 	if vMsg == str(1):
@@ -56,4 +91,9 @@ while userOK == False :
 #Start main useraccnt here!
 msgNum = s.recv(1024)
 print 'You have ' + msgNum + ' unread messages.\n'
+
+while 1:
+	runMenu(s)
+
+s.close()
 

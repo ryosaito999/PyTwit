@@ -25,6 +25,7 @@ class User:
 		return len(self.msgList)
 
 	def addMessage(self, submittedMsg):
+		self.msgList.append(submittedMsg)
 		return None
 
 	def logOut(self):
@@ -55,6 +56,44 @@ def userNameDeclare():
 def sendUserMsgNum(curUser):
 	return curUser.getMsgAmnt()
 
+def editSub():
+	return None
+
+def postMsg(conn, curUser):
+	#wait for message to be tweeted
+	tweet = conn.recv(4096)
+	curUser.addMessage(tweet)
+	print tweet
+	return None
+
+def seeOfflineMsg():
+	return None
+
+def logOut():
+	return None
+
+def searchHashtag():
+	return None
+
+
+def runAction(conn, curUser):
+
+	n = int(conn.recv(1024))
+
+	if n == 1:
+		seeOfflineMsg()
+	elif n == 2: 
+		editSub()
+	elif n == 3:
+		postMsg(conn, curUser)
+	elif n == 4:
+		logOut()
+	elif n == 5:
+		searchHashtag()
+
+
+	else:
+		return None
 
 
 #Main Code
@@ -103,9 +142,13 @@ while userVerify is False:
 
 
 #-------------------------------------------------------------------------------------------------------------------------------
-print 'waiting on Menu selection'
-
 conn.send(str(sendUserMsgNum(curUser)))
+
+print 'waiting on Menu selection... \n'
+
+while 1:
+	runAction(conn, curUser)
+
 
 
 conn.close()
