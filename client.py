@@ -32,15 +32,24 @@ def runMenu(s):
 def postMessageRaw():
 
 	print 'Type a tweet under 140 characters! Press Enter twice to post.\n'
+	msgLen = False
 
-	text = ""
-	stopword = ""
-	while True:
-	    line = raw_input()
-	    if line.strip() == stopword:
-	        break
-	    text += "%s\n" % line
-	return text
+	while msgLen is False:
+		
+		text = ""
+		stopword = ""
+		while True:
+		    line = raw_input()
+		    if line.strip() == stopword:
+		        break
+		    text += "%s\n" % line
+		
+		if len(text) > 140:
+			print 'Tweet is too long. Please retype: \n'
+		
+		else:
+			msgLen = True
+			return text
 
 
 userOK = False

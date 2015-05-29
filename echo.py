@@ -12,7 +12,8 @@ class User:
 		self.uname = u;
 		self.pwd =  p;
 		self.msgList = []
-
+		self.subList = []
+		self.status = 'offline'
 
 	def userVerify(self, u, p):
 		if u == self.uname and p == self.pwd:
@@ -36,6 +37,7 @@ class User:
 def checkUserList(ulist, userTemp, pwdTemp): 
 	for user in ulist:
 		if user.userVerify(userTemp , pwdTemp) is True:
+			user.status = 'online'
 			return user
 
 	return None
@@ -63,10 +65,11 @@ def postMsg(conn, curUser):
 	#wait for message to be tweeted
 	tweet = conn.recv(4096)
 	curUser.addMessage(tweet)
-	print tweet
 	return None
 
-def seeOfflineMsg():
+def seeOfflineMsg(conn, curUser):
+
+
 	return None
 
 def logOut():
@@ -79,9 +82,8 @@ def searchHashtag():
 def runAction(conn, curUser):
 
 	n = int(conn.recv(1024))
-
 	if n == 1:
-		seeOfflineMsg()
+		seeOfflineMsg(conn, curUser)
 	elif n == 2: 
 		editSub()
 	elif n == 3:
@@ -90,7 +92,6 @@ def runAction(conn, curUser):
 		logOut()
 	elif n == 5:
 		searchHashtag()
-
 
 	else:
 		return None
