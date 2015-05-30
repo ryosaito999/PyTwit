@@ -2,6 +2,8 @@ import time
 from check import ip_checksum
 import socket
 import sys
+from thread import *
+
 
 HOST = ''   # Symbolic name meaning all available interfaces
 PORT = 8888 # Arbitrary non-privileged port
@@ -58,7 +60,7 @@ def userNameDeclare():
 def sendUserMsgNum(curUser):
 	return curUser.getMsgAmnt()
 
-def editSub():
+def editSub(conn, curUser):
 	return None
 
 def postMsg(conn, curUser):
@@ -85,7 +87,7 @@ def runAction(conn, curUser):
 	if n == 1:
 		seeOfflineMsg(conn, curUser)
 	elif n == 2: 
-		editSub()
+		editSub(conn, curUser)
 	elif n == 3:
 		postMsg(conn, curUser)
 	elif n == 4:
@@ -95,6 +97,41 @@ def runAction(conn, curUser):
 
 	else:
 		return None
+
+def connNewClient(conn):
+	userVerify = False
+
+	while userVerify is False:
+		
+		userTemp = conn.recv(1024)
+		print userTemp
+
+		pwdTemp = conn.recv(1024)
+		print pwdTemp
+
+		curUser = checkUserList(userlist,userTemp, pwdTemp) 
+		if curUser:
+			msg = str(1)
+			userVerify = True
+
+		else:
+			msg = str(0)
+
+
+		print 'Send: '+ msg
+		conn.send(msg)
+		time.sleep(1)
+
+	conn.send(str(sendUserMsgNum(curUser)))
+	print 'waiting on Menu selection... \n'
+
+	while 1:
+		runAction(conn, curUser)
+
+	
+	conn.close()
+	s.close()
+	return None
 
 
 #Main Code
@@ -113,47 +150,14 @@ print 'Socket bind complete'
 s.listen(10)
 print 'Socket now listening'
 
-conn, addr = s.accept()
-print 'Connected with ' + addr[0] + ':' + str(addr[1])     
-#--------------------------------------------------------------------------------------------------------------------------------
 
-userVerify = False
-
-while userVerify is False:
-	
-	userTemp = conn.recv(1024)
-	print userTemp
-
-	pwdTemp = conn.recv(1024)
-	print pwdTemp
-
-	curUser = checkUserList(userlist,userTemp, pwdTemp) 
-	if curUser:
-		msg = str(1)
-		userVerify = True
-
-	else:
-		msg = str(0)
-
-
-	print 'Send: '+ msg
-	conn.send(msg)
-	time.sleep(1)
-
-
-
-#-------------------------------------------------------------------------------------------------------------------------------
-conn.send(str(sendUserMsgNum(curUser)))
-
-print 'waiting on Menu selection... \n'
-
+#create new thread here
 while 1:
-	runAction(conn, curUser)
+
+	conn, addr = s.accept()
+	start_new_thread(connNewClient ,(conn,))
 
 
-
-conn.close()
-s.close()
 
 
 
