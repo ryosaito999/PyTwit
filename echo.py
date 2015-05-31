@@ -60,6 +60,13 @@ def userNameDeclare():
 def sendUserMsgNum(curUser):
 	return curUser.getMsgAmnt()
 
+def DuplicateSub(curUser, username):
+
+	for user in curUser.subList:
+		if user.uname == username:
+			return True
+
+	return False
 
 
 def editSub(conn, curUser):
@@ -70,25 +77,61 @@ def editSub(conn, curUser):
 	if subSelection == '1':
 
 		while 1:
-		
+			dup = False
 			requestedUser = conn.recv(4096)
+
+			print requestedUser
 			time.sleep(1)
 			for user in userlist:
-				if user.uname == requestedUser:
-					curUser.subList.append(user)
-					conn.send( 'found')
-					return None
+				if user.uname == requestedUser and  user.uname != curUser.uname:
 
-			conn.send('bad')
+					if DuplicateSub(curUser,requestedUser):
+						dup = True
+
+					else:
+						curUser.subList.append(user)
+						conn.send( 'found')
+						return None
+
+			if dup is True:
+				conn.send('duplicate')
+
+			else:
+				conn.send('bad')
 
 	elif subSelection == '2':
 
+		#end early if empty subList on server
+		if len(curUser.subList) == 0:
+			conn.send('emptyList')
+			editSub(conn, curUser)
+			return 
+
+
 		subList = ''
+		#grab all useres in sublist and add ther names into 1 string
 		for user in curUser.subList:
 			subList += '\t' + user.uname + '\n'
 
 		conn.send(subList)
 
+		while 1:
+
+			deleteCanidate = conn.recv(1024)
+			time.sleep(1)
+
+			#search for delete canidate
+
+
+			for user in curUser.subList:
+			#print user. uname
+				if deleteCanidate == user.uname:
+					print 'user found \n'
+					curUser.subList.remove(user) #remove from sublist and send msg deleted
+					conn.send('ok')
+					return None
+
+			conn.send('notFound')
 
 
 	else:

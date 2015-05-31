@@ -37,7 +37,7 @@ def runMenu(s):
 		
 def addNewSub(s):
 	os.system('clear')
-	requestUser = raw_input('Type userName of user you would like to subscrible to: ')
+	requestUser = raw_input('Type userName of another user you would like to subscrible to: ')
 	
 	while 1:
 		s.send(requestUser)
@@ -48,19 +48,43 @@ def addNewSub(s):
 			print 'Found ' + requestUser + '. Added to subscription list.'
 			return None
 
+		elif userFound == 'duplicate':
+			requestUser = raw_input( 'User already exists in subscription list. Please Enter a new user: ')
+
 		else:
-			requestUser = raw_input( 'User not found. Please Enter an exisitng user:' )
+			requestUser = raw_input( 'User not found. Please Enter an exisitng user: ' )
 
 def deleteSubClient(s):
 	os.system('clear')
-	print 'Current list of subscriptions: \n'
-	#get list of subs and print them
 
 	subList = s.recv(1024)
 	time.sleep(1)
 
+	if subList == 'emptyList':
+		print 'You have no subscriptions!\n'
+		time.sleep(2)
+		editSubClient(s)
+		return None
+
+	print 'Current list of subscriptions: \n'
+	#get list of subs and print them
+
 	print subList
 
+	removeCanidate = raw_input( 'which subscription would you like to remove? ')
+	
+	while 1:
+		
+		s.send(removeCanidate)
+
+		deleteStatus = s.recv(1024)
+
+		if deleteStatus == 'ok':
+			print 'User ' + removeCanidate + ' removed from subscription list. \n'
+			return None
+
+		else:
+			raw_input( 'User not found. Please enter a valid name from the list: ')
 
 
 
@@ -74,21 +98,25 @@ def editSubClient(s):
 		print '\t1. Add a new subscription. '
 		print '\t2. Delete an existing subscription. '
 		subInput = raw_input( 'Select an option:')
-		s.send(subInput)
-
-		if int(subInput) is 1:
-			addNewSub(s)
-			validInput = True
-
-
-
-		elif int(subInput) is 2:
-			validInput = True
-			deleteSubClient(s)
+			
+		while 1:
+			
+			if subInput is '1':
+				s.send(subInput)
+				addNewSub(s)
+				validInput = True
+				return
 
 
-		else:
-			print 'invalid input! Please select a valid option: \n'
+
+			elif subInput is '2':
+				s.send(subInput)
+				validInput = True
+				deleteSubClient(s)
+				return
+
+			else:
+				subInput = raw_input( 'invalid input! Please select a valid option: ')
 
 def postMessageRaw():
 
@@ -114,9 +142,10 @@ def postMessageRaw():
 
 def logOut(s):
 	os.system('clear')
-	print 'Logging out. You are now offline'
+	print 'Logging out...... You are now offline'
 	s.close()
 	time.sleep(2)
+	os.system('clear')
 	login()
 
 
@@ -152,7 +181,7 @@ def login():
 		pwd = str(raw_input( 'password: '))
 
 		s.send(uname)
-		time.sleep(2)
+		time.sleep(1)
 		s.send(pwd)
 		time.sleep(1)
 
