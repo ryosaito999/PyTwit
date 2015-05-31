@@ -20,9 +20,9 @@ class User:
 	def userVerify(self, u, p):
 		if u == self.uname and p == self.pwd:
 			return True
-
 		else:
 			return False
+
 
 	def getMsgAmnt(self):
 		return len(self.msgList)
@@ -60,7 +60,39 @@ def userNameDeclare():
 def sendUserMsgNum(curUser):
 	return curUser.getMsgAmnt()
 
+
+
 def editSub(conn, curUser):
+
+	subSelection = conn.recv(1024)
+	time.sleep(1)
+	
+	if subSelection == '1':
+
+		while 1:
+		
+			requestedUser = conn.recv(4096)
+			time.sleep(1)
+			for user in userlist:
+				if user.uname == requestedUser:
+					curUser.subList.append(user)
+					conn.send( 'found')
+					return None
+
+			conn.send('bad')
+
+	elif subSelection == '2':
+
+		subList = ''
+		for user in curUser.subList:
+			subList += '\t' + user.uname + '\n'
+
+		conn.send(subList)
+
+
+
+	else:
+		print 'not correct input'
 	return None
 
 def postMsg(conn, curUser):
@@ -74,16 +106,13 @@ def seeOfflineMsg(conn, curUser):
 
 	return None
 
-def logOut():
-	return None
-
 def searchHashtag():
 	return None
 
 
 def runAction(conn, curUser):
-
 	n = int(conn.recv(1024))
+	time.sleep(1)
 	if n == 1:
 		seeOfflineMsg(conn, curUser)
 	elif n == 2: 
@@ -91,7 +120,7 @@ def runAction(conn, curUser):
 	elif n == 3:
 		postMsg(conn, curUser)
 	elif n == 4:
-		logOut()
+		return -1
 	elif n == 5:
 		searchHashtag()
 
@@ -118,22 +147,18 @@ def connNewClient(conn):
 			msg = str(0)
 
 
-		print 'Send: '+ msg
 		conn.send(msg)
 		time.sleep(1)
 
 	conn.send(str(sendUserMsgNum(curUser)))
-	print 'waiting on Menu selection... \n'
 
 	while 1:
-		runAction(conn, curUser)
+		if runAction(conn, curUser) is -1:
+			return None
 
 	
-	conn.close()
-	s.close()
-	return None
 
-
+#-----------------------------------------------------------------------------------------
 #Main Code
 userlist = userNameDeclare()
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
