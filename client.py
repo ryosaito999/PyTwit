@@ -5,6 +5,7 @@ import select
 import time
 import os
 
+
 def runMenu(s):
 
 	sendInput = 9999
@@ -16,6 +17,7 @@ def runMenu(s):
 	print '4. logout. \n'
 	print '5. Hashtag search. \n'
 
+
 	while sendInput > 6:
 		sendInput = int(raw_input(	'Please select action: ' ))
 		
@@ -23,6 +25,9 @@ def runMenu(s):
 			print "Invalid input.\n"
 
 	s.send(str(sendInput))
+
+	if sendInput == 1:
+		seeOfflineClient(s)
 
 
 	if sendInput == 2:
@@ -34,6 +39,11 @@ def runMenu(s):
 
 	elif sendInput == 4:
 		logOut(s)
+
+
+def seeOfflineClient():
+	print 'offline'
+
 		
 def addNewSub(s):
 	os.system('clear')
@@ -43,7 +53,6 @@ def addNewSub(s):
 		s.send(requestUser)
 		userFound = s.recv(1024)
 		time.sleep(1)
-
 		if userFound == 'found' :
 			print 'Found ' + requestUser + '. Added to subscription list.'
 			return None
@@ -94,10 +103,10 @@ def editSubClient(s):
 
 	while  validInput is False: 
 		os.system('clear')
-		print ''
 		print '\t1. Add a new subscription. '
 		print '\t2. Delete an existing subscription. '
-		subInput = raw_input( 'Select an option:')
+		print '\t3. Return to menu'
+		subInput = raw_input( 'Select an option: ')
 			
 		while 1:
 			
@@ -115,12 +124,16 @@ def editSubClient(s):
 				deleteSubClient(s)
 				return
 
+			elif subInput is '3':
+				s.send(subInput)
+				return
+
 			else:
 				subInput = raw_input( 'invalid input! Please select a valid option: ')
 
 def postMessageRaw():
 
-	print 'Type a tweet under 140 characters! Press Enter twice to post.\n'
+	print 'Type a tweet under 140 characters! Press Enter twice to post. Hit esc at anytime to cancel. \n'
 	msgLen = False
 
 	while msgLen is False:

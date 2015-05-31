@@ -133,6 +133,9 @@ def editSub(conn, curUser):
 
 			conn.send('notFound')
 
+	elif subSelection == '3':
+		return None
+
 
 	else:
 		print 'not correct input'
