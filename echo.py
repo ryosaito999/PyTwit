@@ -39,6 +39,7 @@ class Tweet:
 	def __init__(self,message):
 		self.message = message
 		self.hashtagList = []
+		self.timestamp = time.time()
 
 	def appendTagsList(self, message):
 
@@ -68,8 +69,6 @@ def checkUserList(ulist, userTemp, pwdTemp):
 			user.status = 'online'
 			return user
 	return None
-
-
 
 def userNameDeclare():
 	#Declare User List Here!
@@ -173,8 +172,9 @@ def postMsg(conn, curUser):
 	time.sleep(1)
 
 	newTweet = Tweet(msg)
-	newTweet.appendTagsList(msg) #parse for hashtags before appending
-
+	newTweet.appendTagsList(msg) #parse for hashtags before appending to current User
+	
+	print time.ctime(newTweet.timestamp)
 
 	curUser.addTweet(newTweet)
 	return None
@@ -191,24 +191,24 @@ def seeOfflineMsg(conn, curUser):
 
 def getTweetsAllUsers(requsetedTag):
 
+	matchingTweetsMsg = []
+	for user in userlist:
+		for tweet in user.tweetList:
+			if tweet.serachForTag(requsetedTag):
+				matchingTweetsMsg.append(tweet)
 	messageOutput = ''
 
-	#for user in userlist:
-		#for tweet in user.tweetList:
-		#	if tweet.serachForTag(requsetedTag):
-		#		messageOutput += '='*84 + '\n' + tweet.message  
-
-
-
-
-
-
+	for tweet in matchingTweetsMsg:
+		messageOutput += '='*84 + '\n' + tweet.message + '\n'
+	
+	return messageOutput
 
 
 def searchHashtag(conn, curUser):
 
 	requsetedTag = conn.recv(1024)
 	time.sleep(1)
+	conn.sendall(getTweetsAllUsers(requsetedTag))
 
 		
 

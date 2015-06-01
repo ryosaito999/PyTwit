@@ -27,10 +27,8 @@ def runMenu(s):
 		s.sendall(tweet)
 	elif sendInput == '4':
 		logOut(s)
-
 	elif sendInput == '5':
-		print 'findMsg'
-
+		clientFindHashtag(s)
 	else:
 		print "Invalid input.\n"
 		
@@ -160,6 +158,13 @@ def postMessageRaw():
 def clientFindHashtag(s):
 	tagString = raw_input( 'Enter name of hashtag without the "#": ' )
 	s.send(tagString)
+
+	allMatchingTweets = s.recv(4096)
+	time.sleep(1)
+
+	os.system('clear')
+	print allMatchingTweets
+	return 
 
 def logOut(s):
 	os.system('clear')
