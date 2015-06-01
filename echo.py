@@ -8,6 +8,7 @@ from thread import *
 HOST = ''   # Symbolic name meaning all available interfaces
 PORT = 8888 # Arbitrary non-privileged port
 
+#-------------------------------------------------------------------------------------------------------------
 
 class User:
 	def __init__(self, u, p):
@@ -27,36 +28,40 @@ class User:
 		return len(self.tweetList)
 
 	def addTweet(self, submittedTweet):  #append new tweet to tweetList, containing msg and hashtags
-		[submittedTweet] +  self.tweetList
+		self.tweetList.append(submittedTweet)
 		return None
 
 	def logOut(self):
 		return None
 
+#-------------------------------------------------------------------------------------------------------------
+def appendTagsList(message):
+
+	hashtagList = []
+	splitString = message.split() 
+	for word in splitString:
+		if word.startswith('#') is True:
+			hashtagList.append(word[1:]) #remove hashtag and append to the list
+	
+	return hashtagList
+
+
+
 class Tweet:
 	
 
-	def __init__(self,message):
+	def __init__(self,message, user):
 		self.message = message
-		self.hashtagList = []
+		self.hashtagList = appendTagsList(message)
 		self.timestamp = time.time()
+		self.owner = user
 
-	def appendTagsList(self, message):
 
-		splitString = message.split() 
-		for word in splitString:
-			if word.startswith('#') is True:
-				self.hashtagList.append(word[1:]) #remove hashtag and append to the list
-
-		return None
-
-	def serachForTag(requestedTag):
+	def serachForTag(self,requestedTag):
 
 		for tag in self.hashtagList:
 			if tag == requestedTag:
 				return True
-
-
 		return False
 
 
@@ -171,11 +176,8 @@ def postMsg(conn, curUser):
 	msg = conn.recv(4096)
 	time.sleep(1)
 
-	newTweet = Tweet(msg)
-	newTweet.appendTagsList(msg) #parse for hashtags before appending to current User
-	
-	print time.ctime(newTweet.timestamp)
-
+	newTweet = Tweet(msg, curUser)
+	#print time.ctime(newTweet.timestamp)
 	curUser.addTweet(newTweet)
 	return None
 
@@ -192,14 +194,17 @@ def seeOfflineMsg(conn, curUser):
 def getTweetsAllUsers(requsetedTag):
 
 	matchingTweetsMsg = []
+
 	for user in userlist:
+		print 'user'
 		for tweet in user.tweetList:
+			print 'tweet'
 			if tweet.serachForTag(requsetedTag):
 				matchingTweetsMsg.append(tweet)
 	messageOutput = ''
 
 	for tweet in matchingTweetsMsg:
-		messageOutput += '='*84 + '\n' + tweet.message + '\n'
+		messageOutput += '='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n'
 	
 	return messageOutput
 
@@ -208,7 +213,8 @@ def searchHashtag(conn, curUser):
 
 	requsetedTag = conn.recv(1024)
 	time.sleep(1)
-	conn.sendall(getTweetsAllUsers(requsetedTag))
+	allTweets  = getTweetsAllUsers(requsetedTag)
+	conn.sendall(allTweets)
 
 		
 
