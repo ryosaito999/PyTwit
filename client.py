@@ -9,30 +9,41 @@ import curses
 
 def runMenu(s):
 
-	print '1. See Offline Messages. \n'
-	print '2. Edit subscriptions. \n '
-	print '3. Post new message. \n'
-	print '4. logout. \n'
-	print '5. Hashtag search. \n'
+	print 'Menu:'
+	print '\t1. See Offline Messages. '
+	print '\t2. Edit subscriptions.  '
+	print '\t3. Post new message. '
+	print '\t4. Hashtag search. '
+	print '\t5  See your subscriptions. '
+	print '\t6. See followers.'
+	print '\t7. logout. '
 
 	sendInput = raw_input(	'Please select action: ' )
+	
+	print '='*80 + '\n\n'
+
 	s.send( sendInput)
 
 	if sendInput == '1':
-		seeOfflineClient(s)
+		clientSeeOffline(s)
 	elif sendInput == '2':
-		editSubClient(s)
+		clientEditSubs(s)
 	elif sendInput == '3':
 		tweet = postMessageRaw()
 		s.sendall(tweet)
 	elif sendInput == '4':
-		logOut(s)
-	elif sendInput == '5':
 		clientFindHashtag(s)
+	elif sendInput == '5':
+		clientSeeSubscriptions(s)
+	elif sendInput == '6':
+		clientSeeFollowers(s)
+	elif sendInput == '7':
+		logOut(s)
+
 	else:
 		print "Invalid input.\n"
 		
-def seeOfflineClient(s):
+def clientSeeOffline(s):
 	print '\t1. See all new posted messages.'
 	print '\t2. See all messages of a user you are subscribed to.'
 	print '\t3. Return to menu.'
@@ -51,10 +62,11 @@ def seeOfflineClient(s):
 
 		else:
 			option = raw_input( 'Invalid input. Please slelect an option on the above menu: ')
-			pass
-def addNewSub(s):
+
+
+def clientAddSub(s):
 	os.system('clear')
-	requestUser = raw_input('Type userName of another user you would like to subscrible to: ')
+	requestUser = raw_input('Type username of another user you would like to subscrible to: ')
 	
 	while 1:
 		s.send(requestUser)
@@ -70,7 +82,7 @@ def addNewSub(s):
 		else:
 			requestUser = raw_input( 'User not found. Please Enter an exisitng user: ' )
 
-def deleteSubClient(s):
+def clientDeleteSub(s):
 	os.system('clear')
 
 	subList = s.recv(1024)
@@ -78,13 +90,12 @@ def deleteSubClient(s):
 
 	if subList == 'emptyList':
 		print 'You have no subscriptions!\n'
-		time.sleep(2)
-		editSubClient(s)
+		time.sleep(1)
+		clientEditSubs(s)
 		return None
 
 	print 'Current list of subscriptions: \n'
 	#get list of subs and print them
-
 	print subList
 
 	removeCanidate = raw_input( 'which subscription would you like to remove? ')
@@ -93,19 +104,19 @@ def deleteSubClient(s):
 		
 		s.send(removeCanidate)
 		deleteStatus = s.recv(1024)
+		time.sleep(1)
 
 		if deleteStatus == 'ok':
 			print 'User ' + removeCanidate + ' removed from subscription list. \n'
 			return None
 
 		else:
-			raw_input( 'User not found. Please enter a valid name from the list: ')
+			removeCanidate = raw_input( 'User not found. Please enter a valid name from the list: ')
 
 
 
-def editSubClient(s):
-
-	 
+def clientEditSubs(s):
+	
 		os.system('clear')
 		print '\t1. Add a new subscription. '
 		print '\t2. Delete an existing subscription. '
@@ -115,11 +126,11 @@ def editSubClient(s):
 		while 1:
 			if subInput is '1':
 				s.send(subInput)
-				addNewSub(s)
+				clientAddSub(s)
 				return
 			elif subInput is '2':
 				s.send(subInput)
-				deleteSubClient(s)
+				clientDeleteSub(s)
 				return
 			elif subInput is '3':
 				s.send(subInput)
@@ -163,6 +174,18 @@ def clientFindHashtag(s):
 	else:
 		print allMatchingTweets
 	return 
+
+def clientSeeSubscriptions(s):
+	subscriptions = s.recv(4096)
+	print subscriptions
+	return None
+
+def clientSeeFollowers(s):
+
+	followers = s.recv(4096)
+	print followers
+	return None
+
 
 def logOut(s):
 	os.system('clear')
@@ -228,8 +251,6 @@ def login():
 	while 1:
 		runMenu(s)
 
-
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
-
 login()
 

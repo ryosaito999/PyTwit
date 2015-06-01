@@ -12,12 +12,13 @@ PORT = 8888 # Arbitrary non-privileged port
 
 class User:
 	def __init__(self, u, p):
-		self.uname = u;
-		self.pwd =  p;
+		self.uname = u; #username
+		self.pwd =  p; #password
 		self.tweetList = [] #contains list of tweets
-		self.subList = []
-		self.status = 'offline'
-		self.offlineQueue = []
+		self.subList = [] #who you are subscribed to
+		self.status = 'offline' #status -> offline or online
+		self.offlineQueue = [] #your offline tweet queue
+		self.followersList = []
 
 
 
@@ -66,9 +67,7 @@ class Tweet:
 				return True
 		return False
 
-
-
-#Define functions here!
+#Define main functions here!
 
 def checkUserList(ulist, userTemp, pwdTemp): 
 	for user in ulist:
@@ -100,8 +99,29 @@ def DuplicateSub(curUser, username):
 			return True
 	return False
 
+def runAction(conn, curUser):
+	n = conn.recv(1024)
+	time.sleep(1)
+	if n == '1':
+		serverSeeOffline(conn, curUser)
+	elif n == '2': 
+		serverEditSub(conn, curUser)
+	elif n == '3':
+		serverPostMsg(conn, curUser)
+	elif n == '4':
+		serverSearchHashtag(conn, curUser)
+	elif n == '5':
+		serverGetSubs(conn, curUser)
+	elif n == '6':
+		serverGetFollowers(conn, curUser)
+	elif n == '7':
+		return -1
 
-def seeOfflineMsg(conn, curUser):
+	else:
+		return 0
+
+
+def serverSeeOffline(conn, curUser):
 
 	while 1:
 		offlineSelect = conn.recv(1024)
@@ -114,75 +134,101 @@ def seeOfflineMsg(conn, curUser):
 			print 'print one users msg'
 
 		elif offlineSelect == '3':
+
 			return
 
 
-def editSub(conn, curUser):
+def addSub(conn, curUser):
+	
+	while 1:
+		dup = False
+		requestedUser = conn.recv(4096)
+
+		print requestedUser
+		time.sleep(1)
+		for user in userlist:
+			if user.uname == requestedUser and  user.uname != curUser.uname:
+
+				if DuplicateSub(curUser,requestedUser):
+					dup = True
+
+				else:
+					curUser.subList.append(user)
+					user.followersList.append(curUser)
+
+					conn.send( 'found')
+					return None
+
+		if dup is True:
+			conn.send('duplicate')
+
+		else:
+			conn.send('bad')
+
+def listSubscriptions(curUser):
+	subs = ''
+
+	if len(curUser.subList) == 0:
+		subs = '\tYou are not subscribed to anyone! \n'
+
+	#grab all useres in sublist and add ther names into 1 string
+	
+	else:
+	
+		for user in curUser.subList:
+			subs += '\t' + user.uname + '\n'
+
+	return subs
+
+def delSub(conn, curUser):
+
+#end early if empty subList on server
+
+	if len(curUser.subList) == 0:
+		conn.send('emptyList')
+		serverEditSub(conn, curUser)
+		return 
+
+	conn.send(listSubscriptions(curUser))
+
+	while 1:
+		deleteCanidate = conn.recv(1024)
+		time.sleep(1)
+
+		#search for delete canidate
+		for user in curUser.subList:
+		#print user. uname
+
+			if deleteCanidate == user.uname:
+				curUser.subList.remove(user) #remove from sublist and send msg deleted
+				user.followersList.remove(curUser)
+				conn.send('ok')
+				return None
+
+			conn.send('notFound')	
+
+def serverEditSub(conn, curUser):
 
 	subSelection = conn.recv(1024)
 	time.sleep(1)
 	
 	if subSelection == '1':
-
-		while 1:
-			dup = False
-			requestedUser = conn.recv(4096)
-
-			print requestedUser
-			time.sleep(1)
-			for user in userlist:
-				if user.uname == requestedUser and  user.uname != curUser.uname:
-
-					if DuplicateSub(curUser,requestedUser):
-						dup = True
-
-					else:
-						curUser.subList.append(user)
-						conn.send( 'found')
-						return None
-
-			if dup is True:
-				conn.send('duplicate')
-
-			else:
-				conn.send('bad')
+		addSub(conn, curUser)
 
 	elif subSelection == '2':
-
-		#end early if empty subList on server
-		if len(curUser.subList) == 0:
-			conn.send('emptyList')
-			editSub(conn, curUser)
-			return 
-		subList = ''
-		#grab all useres in sublist and add ther names into 1 string
-		for user in curUser.subList:
-			subList += '\t' + user.uname + '\n'
-		conn.send(subList)
-
-		while 1:
-			deleteCanidate = conn.recv(1024)
-			time.sleep(1)
-
-			#search for delete canidate
-			for user in curUser.subList:
-			#print user. uname
-				if deleteCanidate == user.uname:
-					curUser.subList.remove(user) #remove from sublist and send msg deleted
-					conn.send('ok')
-					return None
-
-			conn.send('notFound')
-
+		delSub(conn, curUser)
+		
 	elif subSelection == '3':
 		return None
-
-
 	else:
 		print 'not correct input'
 	return None
 
-def postMsg(conn, curUser):
+def addTweetOfflineSubs(conn):
+	msg = 'asdfdasf'
+
+
+def serverPostMsg(conn, curUser):
 	#wait for message to be tweeted
 	msg = conn.recv(4096)
 	time.sleep(1)
@@ -197,9 +243,7 @@ def getTweetsAllUsers(requsetedTag):
 	matchingTweetsMsg = []
 
 	for user in userlist:
-		print 'user'
 		for tweet in user.tweetList:
-			print 'tweet'
 			if tweet.serachForTag(requsetedTag):
 				matchingTweetsMsg.append(tweet)
 
@@ -218,31 +262,45 @@ def getTweetsAllUsers(requsetedTag):
 	return messageOutput
 
 
-def searchHashtag(conn, curUser):
+def serverSearchHashtag(conn, curUser):
 
 	requsetedTag = conn.recv(1024)
 	time.sleep(1)
 	allTweets  = getTweetsAllUsers(requsetedTag)
-
-
 	conn.sendall(allTweets)
+	return None
 
+def serverGetSubs(conn, curUser):
+	
+	subs = 'Current subscriptions: \n'
+	subs += listSubscriptions(curUser)
+	print '\n'
 
-def runAction(conn, curUser):
-	n = conn.recv(1024)
-	time.sleep(1)
-	if n == '1':
-		seeOfflineMsg(conn, curUser)
-	elif n == '2': 
-		editSub(conn, curUser)
-	elif n == '3':
-		postMsg(conn, curUser)
-	elif n == '4':
-		return -1
-	elif n == '5':
-		searchHashtag(conn, curUser)
+	conn.send(subs)
+	return None
+
+def listFollowers(curUser):
+	follow = ''
+	#grab all useres in sublist and add ther names into 1 string
+
+	if len(curUser.followersList) == 0:
+		follow = '\tNo one is following you!'
+
 	else:
-		return 0
+		for user in curUser.followersList:
+			follow += '\t' + user.uname + '\n'
+
+	return follow
+
+
+def serverGetFollowers(conn, curUser):
+
+	followers = 'Current followers: \n'
+	followers += listFollowers(curUser)
+	print '\n'
+
+	conn.send(followers)
+	return None
 
 def connNewClient(conn):
 	userVerify = False
@@ -263,7 +321,6 @@ def connNewClient(conn):
 		else:
 			msg = str(0)
 
-
 		conn.send(msg)
 		time.sleep(1)
 
@@ -274,7 +331,6 @@ def connNewClient(conn):
 			return None
 
 	
-
 #-----------------------------------------------------------------------------------------
 #Main Code
 userlist = userNameDeclare()
