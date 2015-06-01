@@ -4,11 +4,10 @@ from check import ip_checksum
 import select
 import time
 import os
-
+import getpass
 import curses
 
 def runMenu(s):
-
 	print 'Menu:'
 	print '\t1. See Offline Messages. '
 	print '\t2. Edit subscriptions.  '
@@ -16,10 +15,9 @@ def runMenu(s):
 	print '\t4. Hashtag search. '
 	print '\t5  See your subscriptions. '
 	print '\t6. See followers.'
-	print '\t7. logout. '
+	print '\t7. logout. \n'
 
 	sendInput = raw_input(	'Please select action: ' )
-	
 	print '='*80 + '\n\n'
 
 	s.send( sendInput)
@@ -225,8 +223,8 @@ def login():
 	print 'Welcome to pyTwit! Enter your username and password.\n' 
 
 	while userOK == False :  
-		uname = str(raw_input( 'username: ' ))
-		pwd = str(raw_input( 'password: '))
+		uname = raw_input( 'username: ' )
+		pwd = getpass.getpass()
 
 		s.send(uname)
 		time.sleep(1)

@@ -8,6 +8,8 @@ from thread import *
 HOST = ''   # Symbolic name meaning all available interfaces
 PORT = 8888 # Arbitrary non-privileged port
 
+MSGCOUNT = 0
+ONLINEUSRS = 0
 #-------------------------------------------------------------------------------------------------------------
 
 class User:
@@ -68,6 +70,10 @@ class Tweet:
 		return False
 
 #Define main functions here!
+
+def serverThreadGUI():
+	print 'GUI goes here'
+
 
 def checkUserList(ulist, userTemp, pwdTemp): 
 	for user in ulist:
@@ -354,8 +360,3 @@ while 1:
 
 	conn, addr = s.accept()
 	start_new_thread(connNewClient ,(conn,))
-
-
-
-
-
