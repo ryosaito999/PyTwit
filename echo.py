@@ -56,6 +56,9 @@ class Tweet:
 		self.timestamp = time.time()
 		self.owner = user
 
+	def __lt__(self, other) :
+		return self.timestamp > other.timestamp
+
 
 	def serachForTag(self,requestedTag):
 
@@ -191,6 +194,10 @@ def seeOfflineMsg(conn, curUser):
 
 	return None
 
+
+
+
+
 def getTweetsAllUsers(requsetedTag):
 
 	matchingTweetsMsg = []
@@ -201,9 +208,16 @@ def getTweetsAllUsers(requsetedTag):
 			print 'tweet'
 			if tweet.serachForTag(requsetedTag):
 				matchingTweetsMsg.append(tweet)
+
+	matchingTweetsMsg.sort() #sort tweet from newest to oldest
+	matchingTweetsMsg = matchingTweetsMsg[:10] #grab 10 newest
+
 	messageOutput = ''
+	tweetCounter = 0
+
 
 	for tweet in matchingTweetsMsg:
+		
 		messageOutput += '='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n'
 	
 	return messageOutput
