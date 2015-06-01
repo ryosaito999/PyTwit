@@ -156,15 +156,19 @@ def postMessageRaw():
 		else:
 			msgLen = True
 			return text
-			
+
+def clientFindHashtag(s):
+	tagString = raw_input( 'Enter name of hashtag without the "#": ' )
+	s.send(tagString)
 
 def logOut(s):
 	os.system('clear')
 	print 'Logging out...... You are now offline'
 	s.close()
-	time.sleep(2)
+	time.sleep(3)
 	os.system('clear')
-	login()
+	login() #clear screen and allow user to relogin using recursive call
+	return
 
 
 def login():

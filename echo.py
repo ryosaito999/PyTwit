@@ -13,7 +13,7 @@ class User:
 	def __init__(self, u, p):
 		self.uname = u;
 		self.pwd =  p;
-		self.msgList = [] #contains list of tweets
+		self.tweetList = [] #contains list of tweets
 		self.subList = []
 		self.status = 'offline'
 
@@ -24,10 +24,10 @@ class User:
 			return False
 
 	def getMsgAmnt(self):
-		return len(self.msgList)
+		return len(self.tweetList)
 
-	def addTweet(self, submittedTweet):  #append new tweet to msgList, containing msg and hashtags
-		[submittedTweet] +  self.msgList
+	def addTweet(self, submittedTweet):  #append new tweet to tweetList, containing msg and hashtags
+		[submittedTweet] +  self.tweetList
 		return None
 
 	def logOut(self):
@@ -40,7 +40,7 @@ class Tweet:
 		self.message = message
 		self.hashtagList = []
 
-	def parseHashtag(self, message):
+	def appendTagsList(self, message):
 
 		splitString = message.split() 
 		for word in splitString:
@@ -48,6 +48,15 @@ class Tweet:
 				self.hashtagList.append(word[1:]) #remove hashtag and append to the list
 
 		return None
+
+	def serachForTag(requestedTag):
+
+		for tag in self.hashtagList:
+			if tag == requestedTag:
+				return True
+
+
+		return False
 
 
 
@@ -163,8 +172,8 @@ def postMsg(conn, curUser):
 	msg = conn.recv(4096)
 	time.sleep(1)
 
-	newTweet = tweet(msg)
-	newTweet.parseHashtag(msg) #parse for hashtags before appending
+	newTweet = Tweet(msg)
+	newTweet.appendTagsList(msg) #parse for hashtags before appending
 
 
 	curUser.addTweet(newTweet)
@@ -180,8 +189,28 @@ def seeOfflineMsg(conn, curUser):
 
 	return None
 
-def searchHashtag():
-	return None
+def getTweetsAllUsers(requsetedTag):
+
+	messageOutput = ''
+
+	#for user in userlist:
+		#for tweet in user.tweetList:
+		#	if tweet.serachForTag(requsetedTag):
+		#		messageOutput += '='*84 + '\n' + tweet.message  
+
+
+
+
+
+
+
+
+def searchHashtag(conn, curUser):
+
+	requsetedTag = conn.recv(1024)
+	time.sleep(1)
+
+		
 
 
 def runAction(conn, curUser):
@@ -211,8 +240,8 @@ def connNewClient(conn):
 		pwdTemp = conn.recv(1024)
 		print pwdTemp
 
-		curUser = checkUserList(userlist,userTemp, pwdTemp) 
-		if curUser:
+		userOK = checkUserList(userlist,userTemp, pwdTemp) 
+		if userOK:
 			msg = str(1)
 			userVerify = True
 
@@ -223,10 +252,10 @@ def connNewClient(conn):
 		conn.send(msg)
 		time.sleep(1)
 
-	conn.send(str(sendUserMsgNum(curUser)))
+	conn.send(str(sendUserMsgNum(userOK)))
 
 	while 1:
-		if runAction(conn, curUser) is -1:
+		if runAction(conn, userOK) is -1:
 			return None
 
 	
