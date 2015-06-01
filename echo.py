@@ -17,6 +17,9 @@ class User:
 		self.tweetList = [] #contains list of tweets
 		self.subList = []
 		self.status = 'offline'
+		self.offlineQueue = []
+
+
 
 	def userVerify(self, u, p):
 		if u == self.uname and p == self.pwd:
@@ -33,7 +36,6 @@ class User:
 
 	def logOut(self):
 		return None
-
 #-------------------------------------------------------------------------------------------------------------
 def appendTagsList(message):
 
@@ -46,17 +48,14 @@ def appendTagsList(message):
 	return hashtagList
 
 
-
 class Tweet:
-	
-
 	def __init__(self,message, user):
 		self.message = message
 		self.hashtagList = appendTagsList(message)
 		self.timestamp = time.time()
 		self.owner = user
 
-	def __lt__(self, other) :
+	def __lt__(self, other) : #comparator function to sort from greatest -> least
 		return self.timestamp > other.timestamp
 
 
@@ -99,8 +98,23 @@ def DuplicateSub(curUser, username):
 	for user in curUser.subList:
 		if user.uname == username:
 			return True
-
 	return False
+
+
+def seeOfflineMsg(conn, curUser):
+
+	while 1:
+		offlineSelect = conn.recv(1024)
+		time.sleep(1)
+
+		if offlineSelect == '1':
+			print 'all offlines go here'
+
+		elif offlineSelect == '2':
+			print 'print one users msg'
+
+		elif offlineSelect == '3':
+			return
 
 
 def editSub(conn, curUser):
@@ -140,8 +154,6 @@ def editSub(conn, curUser):
 			conn.send('emptyList')
 			editSub(conn, curUser)
 			return 
-
-
 		subList = ''
 		#grab all useres in sublist and add ther names into 1 string
 		for user in curUser.subList:
@@ -149,17 +161,13 @@ def editSub(conn, curUser):
 		conn.send(subList)
 
 		while 1:
-
 			deleteCanidate = conn.recv(1024)
 			time.sleep(1)
 
 			#search for delete canidate
-
-
 			for user in curUser.subList:
 			#print user. uname
 				if deleteCanidate == user.uname:
-					print 'user found \n'
 					curUser.subList.remove(user) #remove from sublist and send msg deleted
 					conn.send('ok')
 					return None
@@ -180,22 +188,8 @@ def postMsg(conn, curUser):
 	time.sleep(1)
 
 	newTweet = Tweet(msg, curUser)
-	#print time.ctime(newTweet.timestamp)
 	curUser.addTweet(newTweet)
 	return None
-
-def seeOfflineMsg(conn, curUser):
-
-	offlineSelect = conn.recv(1024)
-	time.sleep(1)
-
-	if offlineSelect == '3':
-		return
-
-	return None
-
-
-
 
 
 def getTweetsAllUsers(requsetedTag):
@@ -209,17 +203,18 @@ def getTweetsAllUsers(requsetedTag):
 			if tweet.serachForTag(requsetedTag):
 				matchingTweetsMsg.append(tweet)
 
+	messageOutput = ''
+
+	if len(matchingTweetsMsg) == 0:
+		return 'noneFound' 
+
 	matchingTweetsMsg.sort() #sort tweet from newest to oldest
 	matchingTweetsMsg = matchingTweetsMsg[:10] #grab 10 newest
 
-	messageOutput = ''
 	tweetCounter = 0
 
-
 	for tweet in matchingTweetsMsg:
-		
 		messageOutput += '='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n'
-	
 	return messageOutput
 
 
@@ -228,9 +223,9 @@ def searchHashtag(conn, curUser):
 	requsetedTag = conn.recv(1024)
 	time.sleep(1)
 	allTweets  = getTweetsAllUsers(requsetedTag)
-	conn.sendall(allTweets)
 
-		
+
+	conn.sendall(allTweets)
 
 
 def runAction(conn, curUser):

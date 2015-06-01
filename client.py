@@ -5,6 +5,7 @@ import select
 import time
 import os
 
+import curses
 
 def runMenu(s):
 
@@ -13,7 +14,6 @@ def runMenu(s):
 	print '3. Post new message. \n'
 	print '4. logout. \n'
 	print '5. Hashtag search. \n'
-
 
 	sendInput = raw_input(	'Please select action: ' )
 	s.send( sendInput)
@@ -32,26 +32,26 @@ def runMenu(s):
 	else:
 		print "Invalid input.\n"
 		
-
-
 def seeOfflineClient(s):
 	print '\t1. See all new posted messages.'
 	print '\t2. See all messages of a user you are subscribed to.'
 	print '\t3. Return to menu.'
 
 	option = raw_input('Select an option: ')
-	s.send(option)
-	if option == '1':
-		print 'bbadfadsf'
-		return
-	if option == '2':
-		print 'babab'
-		return
-	if option =='3':
-		return
+	while 1:
+		s.send(option)
+		if option == '1':
+			print 'bbadfadsf'
+			return
+		if option == '2':
+			print 'babab'
+			return
+		if option =='3':
+			return
 
-
-
+		else:
+			option = raw_input( 'Invalid input. Please slelect an option on the above menu: ')
+			pass
 def addNewSub(s):
 	os.system('clear')
 	requestUser = raw_input('Type userName of another user you would like to subscrible to: ')
@@ -92,7 +92,6 @@ def deleteSubClient(s):
 	while 1:
 		
 		s.send(removeCanidate)
-
 		deleteStatus = s.recv(1024)
 
 		if deleteStatus == 'ok':
@@ -106,9 +105,7 @@ def deleteSubClient(s):
 
 def editSubClient(s):
 
-	validInput = False
-
-	while  validInput is False: 
+	 
 		os.system('clear')
 		print '\t1. Add a new subscription. '
 		print '\t2. Delete an existing subscription. '
@@ -116,22 +113,19 @@ def editSubClient(s):
 		subInput = raw_input( 'Select an option: ')
 			
 		while 1:
-			
 			if subInput is '1':
 				s.send(subInput)
 				addNewSub(s)
-				validInput = True
 				return
 			elif subInput is '2':
 				s.send(subInput)
-				validInput = True
 				deleteSubClient(s)
 				return
 			elif subInput is '3':
 				s.send(subInput)
 				return
 			else:
-				subInput = raw_input( 'invalid input! Please select a valid option: ')
+				subInput = raw_input( 'Invalid input. Please slelect an option on the above menu:  ')
 
 def postMessageRaw():
 
@@ -139,7 +133,6 @@ def postMessageRaw():
 	msgLen = False
 
 	while msgLen is False:
-		
 		text = ""
 		stopword = ""
 		while True:
@@ -163,7 +156,12 @@ def clientFindHashtag(s):
 	time.sleep(1)
 
 	os.system('clear')
-	print allMatchingTweets
+
+	if allMatchingTweets == 'noneFound':
+		print '\tNo tweets with #' + tagString + ' found in database.'
+
+	else:
+		print allMatchingTweets
 	return 
 
 def logOut(s):
