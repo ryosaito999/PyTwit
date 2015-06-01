@@ -8,9 +8,6 @@ import os
 
 def runMenu(s):
 
-	sendInput = 9999
-
-	print 
 	print '1. See Offline Messages. \n'
 	print '2. Edit subscriptions. \n '
 	print '3. Post new message. \n'
@@ -18,33 +15,45 @@ def runMenu(s):
 	print '5. Hashtag search. \n'
 
 
-	while sendInput > 6:
-		sendInput = int(raw_input(	'Please select action: ' ))
-		
-		if sendInput > 6:
-			print "Invalid input.\n"
+	sendInput = raw_input(	'Please select action: ' )
+	s.send( sendInput)
 
-	s.send(str(sendInput))
-
-	if sendInput == 1:
+	if sendInput == '1':
 		seeOfflineClient(s)
-
-
-	if sendInput == 2:
+	elif sendInput == '2':
 		editSubClient(s)
-
-	elif sendInput == 3:
+	elif sendInput == '3':
 		tweet = postMessageRaw()
 		s.sendall(tweet)
-
-	elif sendInput == 4:
+	elif sendInput == '4':
 		logOut(s)
 
+	elif sendInput == '5':
+		print 'findMsg'
 
-def seeOfflineClient():
-	print 'offline'
-
+	else:
+		print "Invalid input.\n"
 		
+
+
+def seeOfflineClient(s):
+	print '\t1. See all new posted messages.'
+	print '\t2. See all messages of a user you are subscribed to.'
+	print '\t3. Return to menu.'
+
+	option = raw_input('Select an option: ')
+	s.send(option)
+	if option == '1':
+		print 'bbadfadsf'
+		return
+	if option == '2':
+		print 'babab'
+		return
+	if option =='3':
+		return
+
+
+
 def addNewSub(s):
 	os.system('clear')
 	requestUser = raw_input('Type userName of another user you would like to subscrible to: ')
@@ -115,19 +124,14 @@ def editSubClient(s):
 				addNewSub(s)
 				validInput = True
 				return
-
-
-
 			elif subInput is '2':
 				s.send(subInput)
 				validInput = True
 				deleteSubClient(s)
 				return
-
 			elif subInput is '3':
 				s.send(subInput)
 				return
-
 			else:
 				subInput = raw_input( 'invalid input! Please select a valid option: ')
 
@@ -152,6 +156,7 @@ def postMessageRaw():
 		else:
 			msgLen = True
 			return text
+			
 
 def logOut(s):
 	os.system('clear')

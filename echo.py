@@ -13,7 +13,7 @@ class User:
 	def __init__(self, u, p):
 		self.uname = u;
 		self.pwd =  p;
-		self.msgList = []
+		self.msgList = [] #contains list of tweets
 		self.subList = []
 		self.status = 'offline'
 
@@ -23,16 +23,33 @@ class User:
 		else:
 			return False
 
-
 	def getMsgAmnt(self):
 		return len(self.msgList)
 
-	def addMessage(self, submittedMsg):
-		self.msgList.append(submittedMsg)
+	def addTweet(self, submittedTweet):  #append new tweet to msgList, containing msg and hashtags
+		[submittedTweet] +  self.msgList
 		return None
 
 	def logOut(self):
 		return None
+
+class Tweet:
+	
+
+	def __init__(self,message):
+		self.message = message
+		self.hashtagList = []
+
+	def parseHashtag(self, message):
+
+		splitString = message.split() 
+		for word in splitString:
+			if word.startswith('#') is True:
+				self.hashtagList.append(word[1:]) #remove hashtag and append to the list
+
+		return None
+
+
 
 #Define functions here!
 
@@ -41,8 +58,9 @@ def checkUserList(ulist, userTemp, pwdTemp):
 		if user.userVerify(userTemp , pwdTemp) is True:
 			user.status = 'online'
 			return user
-
 	return None
+
+
 
 def userNameDeclare():
 	#Declare User List Here!
@@ -112,7 +130,6 @@ def editSub(conn, curUser):
 		#grab all useres in sublist and add ther names into 1 string
 		for user in curUser.subList:
 			subList += '\t' + user.uname + '\n'
-
 		conn.send(subList)
 
 		while 1:
@@ -143,12 +160,23 @@ def editSub(conn, curUser):
 
 def postMsg(conn, curUser):
 	#wait for message to be tweeted
-	tweet = conn.recv(4096)
-	curUser.addMessage(tweet)
+	msg = conn.recv(4096)
+	time.sleep(1)
+
+	newTweet = tweet(msg)
+	newTweet.parseHashtag(msg) #parse for hashtags before appending
+
+
+	curUser.addTweet(newTweet)
 	return None
 
 def seeOfflineMsg(conn, curUser):
 
+	offlineSelect = conn.recv(1024)
+	time.sleep(1)
+
+	if offlineSelect == '3':
+		return
 
 	return None
 
@@ -157,21 +185,20 @@ def searchHashtag():
 
 
 def runAction(conn, curUser):
-	n = int(conn.recv(1024))
+	n = conn.recv(1024)
 	time.sleep(1)
-	if n == 1:
+	if n == '1':
 		seeOfflineMsg(conn, curUser)
-	elif n == 2: 
+	elif n == '2': 
 		editSub(conn, curUser)
-	elif n == 3:
+	elif n == '3':
 		postMsg(conn, curUser)
-	elif n == 4:
+	elif n == '4':
 		return -1
-	elif n == 5:
-		searchHashtag()
-
+	elif n == '5':
+		searchHashtag(conn, curUser)
 	else:
-		return None
+		return 0
 
 def connNewClient(conn):
 	userVerify = False
