@@ -7,7 +7,6 @@ from thread import *
 
 HOST = ''   # Symbolic name meaning all available interfaces
 PORT = 8888 # Arbitrary non-privileged port
-
 MSGCOUNT = 0
 ONLINEUSRS = 0
 #-------------------------------------------------------------------------------------------------------------
@@ -19,10 +18,9 @@ class User:
 		self.tweetList = [] #contains list of tweets
 		self.subList = [] #who you are subscribed to
 		self.status = 'offline' #status -> offline or online
-		self.offlineQueue = [] #your offline tweet queue
-		self.followersList = []
-
-
+		self.offlineQueue = [] #your offline tweet queue -> flush on logout
+		self.followersList = [] #your followers
+		self.onlineQueue = []
 
 	def userVerify(self, u, p):
 		if u == self.uname and p == self.pwd:
@@ -31,14 +29,27 @@ class User:
 			return False
 
 	def getMsgAmnt(self):
-		return len(self.tweetList)
+		return len(self.offlineQueue)
+
 
 	def addTweet(self, submittedTweet):  #append new tweet to tweetList, containing msg and hashtags
 		self.tweetList.append(submittedTweet)
-		return None
+
+		for user in self.followersList:
+			if user.status == 'offline':
+				user.offlineQueue.append(submittedTweet)
+
+			else:
+				user.onlineQueue.append(submittedTweet)
+ 
+		
+		return None	
+
 
 	def logOut(self):
-		return None
+		self.offlineQueue = [] #flush
+		self.status = 'offline'
+		return
 #-------------------------------------------------------------------------------------------------------------
 def appendTagsList(message):
 
@@ -46,8 +57,7 @@ def appendTagsList(message):
 	splitString = message.split() 
 	for word in splitString:
 		if word.startswith('#') is True:
-			hashtagList.append(word[1:]) #remove hashtag and append to the list
-	
+			hashtagList.append(word[1:]) #remove hashtag and append to the list	
 	return hashtagList
 
 
@@ -99,13 +109,14 @@ def sendUserMsgNum(curUser):
 	return curUser.getMsgAmnt()
 
 def DuplicateSub(curUser, username):
-
 	for user in curUser.subList:
 		if user.uname == username:
 			return True
 	return False
 
 def runAction(conn, curUser):
+
+	#conn.send(str(sendUserMsgNum(curUser)))
 	n = conn.recv(1024)
 	time.sleep(1)
 	if n == '1':
@@ -121,11 +132,17 @@ def runAction(conn, curUser):
 	elif n == '6':
 		serverGetFollowers(conn, curUser)
 	elif n == '7':
-		return -1
-
+		return serverLogout(curUser) #returns -1
 	else:
 		return 0
 
+def printTweet(tweet_list):
+
+	messageOutput = ''
+	for tweet in tweet_list:
+		messageOutput += '='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n'
+
+	return messageOutput
 
 def serverSeeOffline(conn, curUser):
 
@@ -134,7 +151,15 @@ def serverSeeOffline(conn, curUser):
 		time.sleep(1)
 
 		if offlineSelect == '1':
-			print 'all offlines go here'
+
+			if len(curUser.offlineQueue) == 0:
+				msg = 'You have no unread messages to display. \n'
+			else:
+				msg =printTweet(curUser.offlineQueue)	
+
+			conn.send(msg)
+			return 
+
 
 		elif offlineSelect == '2':
 			print 'print one users msg'
@@ -180,7 +205,6 @@ def listSubscriptions(curUser):
 	#grab all useres in sublist and add ther names into 1 string
 	
 	else:
-	
 		for user in curUser.subList:
 			subs += '\t' + user.uname + '\n'
 
@@ -230,19 +254,17 @@ def serverEditSub(conn, curUser):
 		print 'not correct input'
 	return None
 
-def addTweetOfflineSubs(conn):
-	msg = 'asdfdasf'
+
 
 
 def serverPostMsg(conn, curUser):
 	#wait for message to be tweeted
 	msg = conn.recv(4096)
 	time.sleep(1)
-
 	newTweet = Tweet(msg, curUser)
 	curUser.addTweet(newTweet)
-	return None
 
+	return None
 
 def getTweetsAllUsers(requsetedTag):
 
@@ -261,11 +283,7 @@ def getTweetsAllUsers(requsetedTag):
 	matchingTweetsMsg.sort() #sort tweet from newest to oldest
 	matchingTweetsMsg = matchingTweetsMsg[:10] #grab 10 newest
 
-	tweetCounter = 0
-
-	for tweet in matchingTweetsMsg:
-		messageOutput += '='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n'
-	return messageOutput
+	return printTweet(matchingTweetsMsg)
 
 
 def serverSearchHashtag(conn, curUser):
@@ -281,7 +299,6 @@ def serverGetSubs(conn, curUser):
 	subs = 'Current subscriptions: \n'
 	subs += listSubscriptions(curUser)
 	print '\n'
-
 	conn.send(subs)
 	return None
 
@@ -291,13 +308,11 @@ def listFollowers(curUser):
 
 	if len(curUser.followersList) == 0:
 		follow = '\tNo one is following you!'
-
 	else:
 		for user in curUser.followersList:
 			follow += '\t' + user.uname + '\n'
 
 	return follow
-
 
 def serverGetFollowers(conn, curUser):
 
@@ -307,6 +322,10 @@ def serverGetFollowers(conn, curUser):
 
 	conn.send(followers)
 	return None
+
+def serverLogout(curUser):
+	curUser.logout()
+	return -1
 
 def connNewClient(conn):
 	userVerify = False
@@ -330,8 +349,7 @@ def connNewClient(conn):
 		conn.send(msg)
 		time.sleep(1)
 
-	conn.send(str(sendUserMsgNum(userOK)))
-
+	userOK.status = 'online'
 	while 1:
 		if runAction(conn, userOK) is -1:
 			return None

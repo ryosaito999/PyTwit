@@ -7,7 +7,17 @@ import os
 import getpass
 import curses
 
+
+
+
 def runMenu(s):
+
+	#Start main useraccnt here!
+	#msgNum = s.recv(1024)
+	#time.sleep(1)
+	#print 'You have ' + msgNum + ' unread messages.\n'
+
+
 	print 'Menu:'
 	print '\t1. See Offline Messages. '
 	print '\t2. Edit subscriptions.  '
@@ -21,7 +31,6 @@ def runMenu(s):
 	print '='*80 + '\n\n'
 
 	s.send( sendInput)
-
 	if sendInput == '1':
 		clientSeeOffline(s)
 	elif sendInput == '2':
@@ -40,6 +49,16 @@ def runMenu(s):
 
 	else:
 		print "Invalid input.\n"
+
+def seeAllOff(s):
+	
+	allOff = s.recv(4096)
+	print allOff +  '\n'
+
+
+def seeOneSubOff(s):
+
+	print 'dasfasdf'
 		
 def clientSeeOffline(s):
 	print '\t1. See all new posted messages.'
@@ -50,8 +69,9 @@ def clientSeeOffline(s):
 	while 1:
 		s.send(option)
 		if option == '1':
-			print 'bbadfadsf'
+			seeAllOff(s)
 			return
+
 		if option == '2':
 			print 'babab'
 			return
@@ -70,6 +90,8 @@ def clientAddSub(s):
 		s.send(requestUser)
 		userFound = s.recv(1024)
 		time.sleep(1)
+
+		#print userFound
 		if userFound == 'found' :
 			print 'Found ' + requestUser + '. Added to subscription list.'
 			return None
@@ -237,17 +259,19 @@ def login():
 		if vMsg == str(1):
 			userOK = True
 			os.system('clear')
+
+
+			
 			print 'Welcome back, ' + uname + '!\n'
 
 		else:
 			print 'Incorrect username/password! Please reenter.\n'
 
-	#Start main useraccnt here!
-	msgNum = s.recv(1024)
-	print 'You have ' + msgNum + ' unread messages.\n'
+
 
 	while 1:
 		runMenu(s)
+		#polling thread function goes here
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 login()
