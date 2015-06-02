@@ -3,13 +3,8 @@ from check import ip_checksum
 import socket
 import sys
 from thread import *
-
-
-HOST = ''   # Symbolic name meaning all available interfaces
-PORT = 8888 # Arbitrary non-privileged port
-MSGCOUNT = 0
-ONLINEUSRS = 0
 #-------------------------------------------------------------------------------------------------------------
+
 
 class User:
 	def __init__(self, u, p):
@@ -31,22 +26,18 @@ class User:
 	def getMsgAmnt(self):
 		return len(self.offlineQueue)
 
-
 	def addTweet(self, submittedTweet):  #append new tweet to tweetList, containing msg and hashtags
 		self.tweetList.append(submittedTweet)
-
 		for user in self.followersList:
 			if user.status == 'offline':
 				user.offlineQueue.append(submittedTweet)
 
 			else:
 				user.onlineQueue.append(submittedTweet)
- 
-		
 		return None	
 
 
-	def logOut(self):
+	def logOutUser(self):
 		self.offlineQueue = [] #flush
 		self.status = 'offline'
 		return
@@ -138,11 +129,21 @@ def runAction(conn, curUser):
 
 def printTweet(tweet_list):
 
+	tweet_list.sort()
 	messageOutput = ''
 	for tweet in tweet_list:
 		messageOutput += '='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n'
 
 	return messageOutput
+
+def getUser(userWanted, user_list):
+
+	for user in user_list:
+		if userWanted == user.uname:
+			return user
+
+	return -1
+
 
 def serverSeeOffline(conn, curUser):
 
@@ -160,9 +161,31 @@ def serverSeeOffline(conn, curUser):
 			conn.send(msg)
 			return 
 
-
 		elif offlineSelect == '2':
-			print 'print one users msg'
+
+			conn.send(listSubscriptions(curUser))
+			userSelect = conn.recv(1024)
+			time.sleep(1)
+
+			userWanted = getUser(userSelect, curUser.subList)
+
+			if userWanted == -1:
+				msg = "Select a valid user from the list. \n"
+
+			singleUserTweets = []
+			for tweet in curUser.offlineQueue:
+				if tweet.owner == userWanted: 
+					
+					singleUserTweets.append(tweet)
+
+			if len(singleUserTweets) == 0:
+				msg = 'No tweets available from the user\n'
+
+			else:
+				msg = printTweet(singleUserTweets)
+
+			conn.send(msg)
+			return
 
 		elif offlineSelect == '3':
 
@@ -264,6 +287,8 @@ def serverPostMsg(conn, curUser):
 	newTweet = Tweet(msg, curUser)
 	curUser.addTweet(newTweet)
 
+	global MSGCOUNT
+	MSGCOUNT += 1
 	return None
 
 def getTweetsAllUsers(requsetedTag):
@@ -324,7 +349,11 @@ def serverGetFollowers(conn, curUser):
 	return None
 
 def serverLogout(curUser):
-	curUser.logout()
+	curUser.logOutUser()
+
+	global ONLINEUSERS 
+	ONLINEUSERS -= 1
+
 	return -1
 
 def connNewClient(conn):
@@ -333,10 +362,7 @@ def connNewClient(conn):
 	while userVerify is False:
 		
 		userTemp = conn.recv(1024)
-		print userTemp
-
 		pwdTemp = conn.recv(1024)
-		print pwdTemp
 
 		userOK = checkUserList(userlist,userTemp, pwdTemp) 
 		if userOK:
@@ -350,6 +376,10 @@ def connNewClient(conn):
 		time.sleep(1)
 
 	userOK.status = 'online'
+	
+	global ONLINEUSERS 
+	ONLINEUSERS += 1
+	
 	while 1:
 		if runAction(conn, userOK) is -1:
 			return None
@@ -357,6 +387,17 @@ def connNewClient(conn):
 	
 #-----------------------------------------------------------------------------------------
 #Main Code
+
+HOST = ''   # Symbolic name meaning all available interfaces
+PORT = 8888 # Arbitrary non-privileged port
+
+
+global MSGCOUNT 
+global ONLINEUSERS 
+
+MSGCOUNT = 0
+ONLINEUSERS = 0 
+
 userlist = userNameDeclare()
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print 'Socket created'

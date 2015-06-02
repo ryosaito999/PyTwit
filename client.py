@@ -55,10 +55,23 @@ def seeAllOff(s):
 	allOff = s.recv(4096)
 	print allOff +  '\n'
 
-
 def seeOneSubOff(s):
+	subs = s.recv(1024)
+	print subs
 
-	print 'dasfasdf'
+	if subs == '\tYou are not subscribed to anyone! \n':
+		clientSeeOffline(s)
+		return
+
+	else:
+		usermsg = raw_input('select which user\'s new messages you would like to see: ')
+		s.send(usermsg)
+
+		tweetsUser = s.recv(1024)
+		print tweetsUser
+
+
+
 		
 def clientSeeOffline(s):
 	print '\t1. See all new posted messages.'
@@ -73,7 +86,7 @@ def clientSeeOffline(s):
 			return
 
 		if option == '2':
-			print 'babab'
+			seeOneSubOff(s)
 			return
 		if option =='3':
 			return
@@ -252,15 +265,11 @@ def login():
 		time.sleep(1)
 		s.send(pwd)
 		time.sleep(1)
-
 		vMsg = s.recv(1024)
-
 
 		if vMsg == str(1):
 			userOK = True
 			os.system('clear')
-
-
 			
 			print 'Welcome back, ' + uname + '!\n'
 
