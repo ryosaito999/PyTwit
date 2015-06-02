@@ -3,8 +3,9 @@ from check import ip_checksum
 import socket
 import sys
 from thread import *
-#-------------------------------------------------------------------------------------------------------------
 
+#-------------------------------------------------------------------------------------------------------------
+global REALTIMETWEET
 
 class User:
 	def __init__(self, u, p):
@@ -26,16 +27,25 @@ class User:
 	def getMsgAmnt(self):
 		return len(self.offlineQueue)
 
-	def addTweet(self, submittedTweet):  #append new tweet to tweetList, containing msg and hashtags
+
+	def threadOnlineSender(self, conn, submittedTweet):
+		conn.send('__realTime__')
+		ack = conn.recv(1024)
+		time.sleep(1)
+
+		if ack == 'readyRecv':
+			conn.send( submittedTweet)
+		return
+
+	def addTweet(self, submittedTweet, conn):  #append new tweet to tweetList, containing msg and hashtags
 		self.tweetList.append(submittedTweet)
 		for user in self.followersList:
 			if user.status == 'offline':
 				user.offlineQueue.append(submittedTweet)
-
 			else:
-				user.onlineQueue.append(submittedTweet)
+				#start background thread that sends tweet to client without interrrupting server
+				start_new_thread(threadOnlineSender ,(conn,submittedTweet, ))
 		return None	
-
 
 	def logOutUser(self):
 		self.offlineQueue = [] #flush
@@ -51,7 +61,6 @@ def appendTagsList(message):
 			hashtagList.append(word[1:]) #remove hashtag and append to the list	
 	return hashtagList
 
-
 class Tweet:
 	def __init__(self,message, user):
 		self.message = message
@@ -62,7 +71,6 @@ class Tweet:
 	def __lt__(self, other) : #comparator function to sort from greatest -> least
 		return self.timestamp > other.timestamp
 
-
 	def serachForTag(self,requestedTag):
 
 		for tag in self.hashtagList:
@@ -72,9 +80,12 @@ class Tweet:
 
 #Define main functions here!
 
+def realTimeTweetCheck():
+
+	print 'wtf'
+
 def serverThreadGUI():
 	print 'GUI goes here'
-
 
 def checkUserList(ulist, userTemp, pwdTemp): 
 	for user in ulist:
@@ -107,7 +118,6 @@ def DuplicateSub(curUser, username):
 
 def runAction(conn, curUser):
 
-	#conn.send(str(sendUserMsgNum(curUser)))
 	n = conn.recv(1024)
 	time.sleep(1)
 	if n == '1':
@@ -141,7 +151,6 @@ def getUser(userWanted, user_list):
 	for user in user_list:
 		if userWanted == user.uname:
 			return user
-
 	return -1
 
 
@@ -199,7 +208,7 @@ def addSub(conn, curUser):
 		requestedUser = conn.recv(4096)
 
 		print requestedUser
-		time.sleep(1)
+		#time.sleep(1)
 		for user in userlist:
 			if user.uname == requestedUser and  user.uname != curUser.uname:
 
@@ -285,7 +294,7 @@ def serverPostMsg(conn, curUser):
 	msg = conn.recv(4096)
 	time.sleep(1)
 	newTweet = Tweet(msg, curUser)
-	curUser.addTweet(newTweet)
+	curUser.addTweet(newTweet, conn)
 
 	global MSGCOUNT
 	MSGCOUNT += 1
@@ -368,6 +377,8 @@ def connNewClient(conn):
 		if userOK:
 			msg = str(1)
 			userVerify = True
+			userOK.status = 'online'
+
 
 		else:
 			msg = str(0)
@@ -375,8 +386,8 @@ def connNewClient(conn):
 		conn.send(msg)
 		time.sleep(1)
 
-	userOK.status = 'online'
-	
+
+	#sendUserMsgNum(userOK)
 	global ONLINEUSERS 
 	ONLINEUSERS += 1
 	

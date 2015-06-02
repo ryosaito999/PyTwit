@@ -6,17 +6,26 @@ import time
 import os
 import getpass
 import curses
+from thread import *
 
+def checkOnlineTweet(s): #create new thread that accepts a specific flag
+
+		realtTimeFlag = s.recv(4096)
+		time.sleep(1)
+		if realtTimeFlag == '__realTime__':
+			s.send('readyRecv')
+			tweet = s.recv(1024)
+			messageOutput += '\n' +' ='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n'
+			print messageOutput
+
+		return
 
 
 
 def runMenu(s):
 
 	#Start main useraccnt here!
-	#msgNum = s.recv(1024)
-	#time.sleep(1)
-	#print 'You have ' + msgNum + ' unread messages.\n'
-
+	print '='*80 + '\n'
 
 	print 'Menu:'
 	print '\t1. See Offline Messages. '
@@ -28,7 +37,7 @@ def runMenu(s):
 	print '\t7. logout. \n'
 
 	sendInput = raw_input(	'Please select action: ' )
-	print '='*80 + '\n\n'
+	print '\n' + '='*80 + '\n\n'
 
 	s.send( sendInput)
 	if sendInput == '1':
@@ -69,11 +78,9 @@ def seeOneSubOff(s):
 
 		tweetsUser = s.recv(1024)
 		print tweetsUser
-
-
-
 		
 def clientSeeOffline(s):
+	os.system('clear')
 	print '\t1. See all new posted messages.'
 	print '\t2. See all messages of a user you are subscribed to.'
 	print '\t3. Return to menu.'
@@ -272,16 +279,16 @@ def login():
 			os.system('clear')
 			
 			print 'Welcome back, ' + uname + '!\n'
+			#msgNum = s.recv(1024)
+			#time.sleep(1)
+			#print 'You have ' + msgNum + ' unread messages.\n\n'
 
 		else:
 			print 'Incorrect username/password! Please reenter.\n'
 
-
-
 	while 1:
+		start_new_thread(checkOnlineTweet ,(s,) )
 		runMenu(s)
-		#polling thread function goes here
-
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 login()
 
