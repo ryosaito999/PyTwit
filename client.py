@@ -7,6 +7,7 @@ import select
 import time
 import os
 import getpass
+import getCh from * 
 import curses
 from thread import *
 

@@ -78,7 +78,7 @@ def checkUserList(ulist, userTemp, pwdTemp):
 		if user.userVerify(userTemp , pwdTemp) is True:
 			user.status = 'online'
 			return user
-	return Nonel
+	return None
 
 def userNameDeclare():
 	#Declare User List Here!
