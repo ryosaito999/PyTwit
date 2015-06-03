@@ -28,14 +28,6 @@ class User:
 		return len(self.offlineQueue)
 
 
-	def threadOnlineSender(self, conn, submittedTweet):
-		conn.send('__realTime__')
-		ack = conn.recv(1024)
-		time.sleep(1)
-
-		if ack == 'readyRecv':
-			conn.send( submittedTweet)
-		return
 
 	def addTweet(self, submittedTweet, conn):  #append new tweet to tweetList, containing msg and hashtags
 		self.tweetList.append(submittedTweet)
@@ -52,6 +44,18 @@ class User:
 		self.status = 'offline'
 		return
 #-------------------------------------------------------------------------------------------------------------
+
+def threadOnlineSender(conn, submittedTweet):
+	conn.send('__realTime__')
+	ack = conn.recv(1024)
+	time.sleep(1)
+
+	if ack == 'readyRecv':
+		conn.send( submittedTweet)
+	return
+
+
+
 def appendTagsList(message):
 
 	hashtagList = []
@@ -99,7 +103,7 @@ def userNameDeclare():
 	userlist = []
 	user1 = User("gintoki", "ichigo")
 	user2 = User("kagura", "sadaharu")
-	user3 = User("shinpachi", "glasses")
+	user3 = User("ryota", "saito")
 	user4 = User("fruitspunchsamurai", "otae")
 	userlist.append(user1);
 	userlist.append(user2);
@@ -208,8 +212,8 @@ def addSub(conn, curUser):
 		requestedUser = conn.recv(4096)
 
 		print requestedUser
-		#time.sleep(1)
 		for user in userlist:
+			print user.uname
 			if user.uname == requestedUser and  user.uname != curUser.uname:
 
 				if DuplicateSub(curUser,requestedUser):
@@ -254,20 +258,18 @@ def delSub(conn, curUser):
 	conn.send(listSubscriptions(curUser))
 
 	while 1:
-		deleteCanidate = conn.recv(1024)
+		delCan = conn.recv(1024)
 		time.sleep(1)
-
-		#search for delete canidate
-		for user in curUser.subList:
-		#print user. uname
-
-			if deleteCanidate == user.uname:
-				curUser.subList.remove(user) #remove from sublist and send msg deleted
-				user.followersList.remove(curUser)
+		for u in curUser.subList:
+			
+			tmp = u.uname 
+			if tmp == delCan:
 				conn.send('ok')
+				curUser.subList.remove(u) #remove from sublist and send msg deleted
+				u.followersList.remove(u)
 				return None
 
-			conn.send('notFound')	
+		conn.send('notFound')	
 
 def serverEditSub(conn, curUser):
 

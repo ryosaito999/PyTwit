@@ -1,4 +1,6 @@
 import socket   #for sockets
+from socket import AF_INET, SOCK_STREAM
+import errno
 import sys  #for exit
 from check import ip_checksum
 import select
@@ -9,18 +11,22 @@ import curses
 from thread import *
 
 def checkOnlineTweet(s): #create new thread that accepts a specific flag
-
-		realtTimeFlag = s.recv(4096)
-		time.sleep(1)
+		
+		realtTimeFlag = ''
+		try:
+			s.settimeout(0)
+			realtTimeFlag = s.recv(4096)
+		
+		except (socket.timeout, socket.error, errno.errorcode[11]):
+			pass
+		s.settimeout(None)
 		if realtTimeFlag == '__realTime__':
-			s.send('readyRecv')
-			tweet = s.recv(1024)
-			messageOutput += '\n' +' ='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n'
-			print messageOutput
 
-		return
-
-
+			print 'found new msg'
+		 	s.send('readyRecv')
+		 	tweet = s.recv(1024)
+		 	messageOutput += '\n' +' ='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n'
+		 	print messageOutput
 
 def runMenu(s):
 
@@ -146,6 +152,7 @@ def clientDeleteSub(s):
 		deleteStatus = s.recv(1024)
 		time.sleep(1)
 
+		print deleteStatus
 		if deleteStatus == 'ok':
 			print 'User ' + removeCanidate + ' removed from subscription list. \n'
 			return None
@@ -277,7 +284,6 @@ def login():
 		if vMsg == str(1):
 			userOK = True
 			os.system('clear')
-			
 			print 'Welcome back, ' + uname + '!\n'
 			#msgNum = s.recv(1024)
 			#time.sleep(1)
@@ -287,8 +293,9 @@ def login():
 			print 'Incorrect username/password! Please reenter.\n'
 
 	while 1:
-		start_new_thread(checkOnlineTweet ,(s,) )
 		runMenu(s)
+		start_new_thread(checkOnlineTweet ,(s,) )
+
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 login()
 
