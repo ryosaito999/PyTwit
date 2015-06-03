@@ -5,7 +5,6 @@ import sys
 from thread import *
 
 #-------------------------------------------------------------------------------------------------------------
-global REALTIMETWEET
 
 class User:
 	def __init__(self, u, p):
@@ -27,17 +26,18 @@ class User:
 	def getMsgAmnt(self):
 		return len(self.offlineQueue)
 
-
-
 	def addTweet(self, submittedTweet, conn):  #append new tweet to tweetList, containing msg and hashtags
 		self.tweetList.append(submittedTweet)
 		for user in self.followersList:
 			if user.status == 'offline':
 				user.offlineQueue.append(submittedTweet)
-			else:
+			elif user.status == 'online' :
 				#start background thread that sends tweet to client without interrrupting server
-				start_new_thread(threadOnlineSender ,(conn,submittedTweet, ))
+				#threadOnlineSender(user, conn, submittedTweet)
+				user.onlineQueue.append(submittedTweet)
+
 		return None	
+
 
 	def logOutUser(self):
 		self.offlineQueue = [] #flush
@@ -45,14 +45,20 @@ class User:
 		return
 #-------------------------------------------------------------------------------------------------------------
 
-def threadOnlineSender(conn, submittedTweet):
-	conn.send('__realTime__')
-	ack = conn.recv(1024)
-	time.sleep(1)
+# def threadOnlineSender(user, conn, tweet):
+# 	# conn.send('__realTime__')
+# 	# ack = conn.recv(1024)
+# 	# #time.sleep(1)
 
-	if ack == 'readyRecv':
-		conn.send( submittedTweet)
-	return
+# 	# global REALTIMETWEET
+# 	# REALTIMETWEET = ''
+# 	# if ack == 'readyRecv':
+
+# 	#  	REALTIMETWEET += '\n' +' ='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n' + '='*80 + '\n'
+# 	# 	conn.send( REALTIMETWEET)
+# 	# return
+
+# 	#backup implementation
 
 
 
@@ -266,7 +272,7 @@ def delSub(conn, curUser):
 			if tmp == delCan:
 				conn.send('ok')
 				curUser.subList.remove(u) #remove from sublist and send msg deleted
-				u.followersList.remove(u)
+				u.followersList.remove(curUser)
 				return None
 
 		conn.send('notFound')	
@@ -367,6 +373,24 @@ def serverLogout(curUser):
 
 	return -1
 
+def checkOnlineQueue(curUser,conn):
+
+	while 1:
+		if len(curUser.onlineQueue) != 0: 
+			print 'sending msg'
+			tweet = curUser.onlineQueue[0] 
+			msg =''
+			
+			s.send('__realTime__')
+			ack = conn.recv(1024)
+			if ack == 'readyRecv':
+
+			 	msg += '\n' +' ='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n' + '='*80 + '\n'
+				conn.send( msg)
+				curUser.onlineQueue = []
+				time.sleep(2)
+			
+
 def connNewClient(conn):
 	userVerify = False
 
@@ -392,7 +416,9 @@ def connNewClient(conn):
 	#sendUserMsgNum(userOK)
 	global ONLINEUSERS 
 	ONLINEUSERS += 1
-	
+
+	start_new_thread(checkOnlineQueue, (userOK,conn,))
+
 	while 1:
 		if runAction(conn, userOK) is -1:
 			return None

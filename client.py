@@ -11,22 +11,24 @@ import curses
 from thread import *
 
 def checkOnlineTweet(s): #create new thread that accepts a specific flag
+	
+	while 1:
 		
 		realtTimeFlag = ''
 		try:
-			s.settimeout(0)
+			s.settimeout(1)
 			realtTimeFlag = s.recv(4096)
 		
 		except (socket.timeout, socket.error, errno.errorcode[11]):
 			pass
+			
 		s.settimeout(None)
 		if realtTimeFlag == '__realTime__':
 
 			print 'found new msg'
 		 	s.send('readyRecv')
-		 	tweet = s.recv(1024)
-		 	messageOutput += '\n' +' ='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n'
-		 	print messageOutput
+		 	tweet = s.recv(4906)
+		 	print tweet
 
 def runMenu(s):
 
