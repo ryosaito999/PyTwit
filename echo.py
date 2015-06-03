@@ -32,8 +32,6 @@ class User:
 			if user.status == 'offline':
 				user.offlineQueue.append(submittedTweet)
 			elif user.status == 'online' :
-				#start background thread that sends tweet to client without interrrupting server
-				#threadOnlineSender(user, conn, submittedTweet)
 				user.onlineQueue.append(submittedTweet)
 
 		return None	
@@ -80,7 +78,7 @@ def checkUserList(ulist, userTemp, pwdTemp):
 		if user.userVerify(userTemp , pwdTemp) is True:
 			user.status = 'online'
 			return user
-	return None
+	return Nonel
 
 def userNameDeclare():
 	#Declare User List Here!
@@ -451,8 +449,8 @@ def setupSock():
 
 		conn, addr = s.accept()
 		start_new_thread(connNewClient ,(conn,))
-
-
+		#implement select
+		#no need to start threading
 #-----------------------------------------------------------------------------------------
 #Main Code
 
