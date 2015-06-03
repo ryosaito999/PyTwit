@@ -43,22 +43,6 @@ class User:
 		self.offlineQueue = [] #flush
 		self.status = 'offline'
 		return
-#-------------------------------------------------------------------------------------------------------------
-
-# def threadOnlineSender(user, conn, tweet):
-# 	# conn.send('__realTime__')
-# 	# ack = conn.recv(1024)
-# 	# #time.sleep(1)
-
-# 	# global REALTIMETWEET
-# 	# REALTIMETWEET = ''
-# 	# if ack == 'readyRecv':
-
-# 	#  	REALTIMETWEET += '\n' +' ='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n' + '='*80 + '\n'
-# 	# 	conn.send( REALTIMETWEET)
-# 	# return
-
-# 	#backup implementation
 
 
 
@@ -90,12 +74,6 @@ class Tweet:
 
 #Define main functions here!
 
-def realTimeTweetCheck():
-
-	print 'wtf'
-
-def serverThreadGUI():
-	print 'GUI goes here'
 
 def checkUserList(ulist, userTemp, pwdTemp): 
 	for user in ulist:
@@ -217,9 +195,7 @@ def addSub(conn, curUser):
 		dup = False
 		requestedUser = conn.recv(4096)
 
-		print requestedUser
-		for user in userlist:
-			print user.uname
+		for user in USERLIST:
 			if user.uname == requestedUser and  user.uname != curUser.uname:
 
 				if DuplicateSub(curUser,requestedUser):
@@ -295,6 +271,13 @@ def serverEditSub(conn, curUser):
 	return None
 
 
+def updateSTOREDCOUNT():
+
+	global STOREDCOUNT
+	for user in USERLIST:
+		for tweet in user.offlineQueue:
+			STOREDCOUNT+= 1
+
 
 
 def serverPostMsg(conn, curUser):
@@ -306,13 +289,14 @@ def serverPostMsg(conn, curUser):
 
 	global MSGCOUNT
 	MSGCOUNT += 1
+	updateSTOREDCOUNT()
 	return None
 
 def getTweetsAllUsers(requsetedTag):
 
 	matchingTweetsMsg = []
 
-	for user in userlist:
+	for user in USERLIST:
 		for tweet in user.tweetList:
 			if tweet.serachForTag(requsetedTag):
 				matchingTweetsMsg.append(tweet)
@@ -367,7 +351,7 @@ def serverGetFollowers(conn, curUser):
 
 def serverLogout(curUser):
 	curUser.logOutUser()
-
+	updateSTOREDCOUNT()
 	global ONLINEUSERS 
 	ONLINEUSERS -= 1
 
@@ -399,7 +383,7 @@ def connNewClient(conn):
 		userTemp = conn.recv(1024)
 		pwdTemp = conn.recv(1024)
 
-		userOK = checkUserList(userlist,userTemp, pwdTemp) 
+		userOK = checkUserList(USERLIST,userTemp, pwdTemp) 
 		if userOK:
 			msg = str(1)
 			userVerify = True
@@ -413,17 +397,62 @@ def connNewClient(conn):
 		time.sleep(1)
 
 
-	#sendUserMsgNum(userOK)
+	conn.send(str(sendUserMsgNum(userOK)))
 	global ONLINEUSERS 
 	ONLINEUSERS += 1
 
-	start_new_thread(checkOnlineQueue, (userOK,conn,))
 
 	while 1:
 		if runAction(conn, userOK) is -1:
 			return None
 
 	
+
+def commandLine():
+
+	global MSGCOUNT 
+	global ONLINEUSERS 
+
+	while 1:
+		cmd = raw_input(':')
+
+		if cmd == 'messagecount' :
+			print 'Total # off messages: ' + str(MSGCOUNT) + '\n'
+
+		elif cmd == 'usercount':
+			print 'Users online: ' + str(ONLINEUSERS )+ '\n'
+
+		elif cmd == 'usercount':
+			print 'Users online: ' + str(STOREDCOUNT )+ '\n'
+
+		elif cmd == 'newuser':
+			username = raw_input('\ttype a username:')
+			password = raw_input('\ttype a password:')
+			newUsr = User(username,password)
+			USERLIST.append(newUsr)
+			print 'added user ' + username +'.\n'
+
+		else:
+			pass
+
+
+
+def setupSock():
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	 
+	try:
+	    s.bind((HOST, PORT))
+	except socket.error , msg:
+	    sys.exit()	 
+	s.listen(10)
+
+	#create new thread here
+	while 1:
+
+		conn, addr = s.accept()
+		start_new_thread(connNewClient ,(conn,))
+
+
 #-----------------------------------------------------------------------------------------
 #Main Code
 
@@ -432,29 +461,15 @@ PORT = 8888 # Arbitrary non-privileged port
 
 
 global MSGCOUNT 
-global ONLINEUSERS 
-
+global ONLINEUSERS
+global STOREDCOUNT 
+global USERLIST
 MSGCOUNT = 0
 ONLINEUSERS = 0 
-
-userlist = userNameDeclare()
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-print 'Socket created'
- 
-try:
-    s.bind((HOST, PORT))
-except socket.error , msg:
-    print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
-    sys.exit()
-     
-print 'Socket bind complete'
- 
-s.listen(10)
-print 'Socket now listening'
+STOREDCOUNT = 0
+USERLIST = []
 
 
-#create new thread here
-while 1:
-
-	conn, addr = s.accept()
-	start_new_thread(connNewClient ,(conn,))
+USERLIST = userNameDeclare()
+start_new_thread(setupSock, ())
+commandLine()

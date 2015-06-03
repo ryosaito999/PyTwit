@@ -18,7 +18,6 @@ def checkOnlineTweet(s): #create new thread that accepts a specific flag
 		try:
 			s.settimeout(1)
 			realtTimeFlag = s.recv(4096)
-		
 		except (socket.timeout, socket.error, errno.errorcode[11]):
 			pass
 			
@@ -287,16 +286,15 @@ def login():
 			userOK = True
 			os.system('clear')
 			print 'Welcome back, ' + uname + '!\n'
-			#msgNum = s.recv(1024)
-			#time.sleep(1)
-			#print 'You have ' + msgNum + ' unread messages.\n\n'
+			msgNum = s.recv(1024)
+			time.sleep(1)
+			print 'You have ' + msgNum + ' unread messages.\n\n'
 
 		else:
 			print 'Incorrect username/password! Please reenter.\n'
 
 	while 1:
 		runMenu(s)
-		start_new_thread(checkOnlineTweet ,(s,) )
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 login()
