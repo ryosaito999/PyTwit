@@ -3,6 +3,7 @@ from check import ip_checksum
 import socket
 import sys
 from thread import *
+import select
 
 #-------------------------------------------------------------------------------------------------------------
 
@@ -32,17 +33,14 @@ class User:
 			if user.status == 'offline':
 				user.offlineQueue.append(submittedTweet)
 			elif user.status == 'online' :
-				user.onlineQueue.append(submittedTweet)
-
+				msg = formatSingleTweet(submittedTweet)
+				s.send(msg)
 		return None	
-
 
 	def logOutUser(self):
 		self.offlineQueue = [] #flush
 		self.status = 'offline'
 		return
-
-
 
 def appendTagsList(message):
 
@@ -71,8 +69,6 @@ class Tweet:
 		return False
 
 #Define main functions here!
-
-
 def checkUserList(ulist, userTemp, pwdTemp): 
 	for user in ulist:
 		if user.userVerify(userTemp , pwdTemp) is True:
@@ -122,6 +118,10 @@ def runAction(conn, curUser):
 		return serverLogout(curUser) #returns -1
 	else:
 		return 0
+
+def formatSingleTweet(tweet):
+	messageOutput += '='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n'
+	return messageOutput
 
 def printTweet(tweet_list):
 
@@ -400,57 +400,79 @@ def connNewClient(conn):
 	ONLINEUSERS += 1
 
 
-	while 1:
-		if runAction(conn, userOK) is -1:
-			return None
+	#while 1:
+	runAction(conn, userOK)
+			#return None
 
 	
 
-def commandLine():
+def commandLine(cmd):
 
 	global MSGCOUNT 
 	global ONLINEUSERS 
 
-	while 1:
-		cmd = raw_input(':')
+	if cmd == 'messagecount' :
+		print 'Total # off messages: ' + str(MSGCOUNT) + '\n'
 
-		if cmd == 'messagecount' :
-			print 'Total # off messages: ' + str(MSGCOUNT) + '\n'
+	elif cmd == 'usercount':
+		print 'Users online: ' + str(ONLINEUSERS )+ '\n'
 
-		elif cmd == 'usercount':
-			print 'Users online: ' + str(ONLINEUSERS )+ '\n'
+	elif cmd == 'usercount':
+		print 'Users online: ' + str(STOREDCOUNT )+ '\n'
 
-		elif cmd == 'usercount':
-			print 'Users online: ' + str(STOREDCOUNT )+ '\n'
+	elif cmd == 'newuser':
+		username = raw_input('\ttype a username:')
+		password = raw_input('\ttype a password:')
+		newUsr = User(username,password)
+		USERLIST.append(newUsr)
+		print 'added user ' + username +'.\n'
 
-		elif cmd == 'newuser':
-			username = raw_input('\ttype a username:')
-			password = raw_input('\ttype a password:')
-			newUsr = User(username,password)
-			USERLIST.append(newUsr)
-			print 'added user ' + username +'.\n'
-
-		else:
-			pass
+	else:
+		pass
 
 
 
 def setupSock():
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	 
+	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	CONNECTION_LIST = []
 	try:
-	    s.bind((HOST, PORT))
+	    server_socket.bind((HOST, PORT))
 	except socket.error , msg:
 	    sys.exit()	 
-	s.listen(10)
-
+	
+	server_socket.listen(10)
+	CONNECTION_LIST.append(server_socket)
 	#create new thread here
 	while 1:
+		
+		read_sockets,write_sockets,error_sockets = select.select(CONNECTION_LIST , [], [] );		
 
-		conn, addr = s.accept()
-		start_new_thread(connNewClient ,(conn,))
-		#implement select
-		#no need to start threading
+		for sock in read_sockets:
+			if sock == server_socket:
+
+				#incoming connection, add it to list
+				conn, addr = server_socket.accept()
+				CONNECTION_LIST.append(conn)
+
+
+			# elif read_sockets == sys.stdin :
+			# 	commandLine(cmd)
+
+			else:
+				connNewClient(conn)
+
+
+		# conn, addr = server_socket.accept()
+		# start_new_thread(connNewClient ,(conn,))
+
+		
+
+
+
+
+	#start_new_thread(connNewClient ,(conn,))
+	#implement select
+	#no need to start threading
 #-----------------------------------------------------------------------------------------
 #Main Code
 
@@ -467,7 +489,6 @@ ONLINEUSERS = 0
 STOREDCOUNT = 0
 USERLIST = []
 
-
 USERLIST = userNameDeclare()
-start_new_thread(setupSock, ())
-commandLine()
+setupSock()
+#commandLine()

@@ -7,7 +7,7 @@ import select
 import time
 import os
 import getpass
-import getCh from * 
+from getCh import *
 import curses
 from thread import *
 
@@ -44,10 +44,12 @@ def runMenu(s):
 	print '\t6. See followers.'
 	print '\t7. logout. \n'
 
-	sendInput = raw_input(	'Please select action: ' )
+	#sendInput = raw_input(	'Please select action: ' )
+	sendInput = selectRecv(s, 'Please select action: ')
 	print '\n' + '='*80 + '\n\n'
 
 	s.send( sendInput)
+
 	if sendInput == '1':
 		clientSeeOffline(s)
 	elif sendInput == '2':
@@ -86,6 +88,51 @@ def seeOneSubOff(s):
 
 		tweetsUser = s.recv(1024)
 		print tweetsUser
+
+def  selectRecv(s, prompt):
+	print prompt
+	socket_list = [sys.stdin, s]
+	read_sockets,write_sockets,error_sockets = select.select(socket_list , [], [] )		
+	
+	for sock in read_sockets:
+		if sock == s:
+			data = sock.recv(4096)
+			#time.sleep(1)
+
+			if data:
+				print 'broadcast ok!'
+				return data
+
+
+	else:
+		msg = sys.stdin.readline()
+		msg = msg.strip()
+		sys.stdout.flush()
+		return msg
+
+
+	# else:
+	# 	stdout write (flag)
+	# 	write data 
+	# 	write prompt
+	# 	flush
+
+# def getServerRes 
+
+
+	# #same 
+
+	# if sock == s:
+	# 	data = sock recv
+
+	# 	if data 
+
+	# 	if data I want:
+	# 		return data
+	# 	else:
+	# 		print data keep waiting
+
+
 		
 def clientSeeOffline(s):
 	os.system('clear')
@@ -170,7 +217,7 @@ def clientEditSubs(s):
 		print '\t1. Add a new subscription. '
 		print '\t2. Delete an existing subscription. '
 		print '\t3. Return to menu'
-		subInput = raw_input( 'Select an option: ')
+		subInput = selectRecv(s,'Select an option: ')
 			
 		while 1:
 			if subInput is '1':
@@ -185,7 +232,7 @@ def clientEditSubs(s):
 				s.send(subInput)
 				return
 			else:
-				subInput = raw_input( 'Invalid input. Please slelect an option on the above menu:  ')
+				subInput = selectRecv( s, 'Invalid input. Please slelect an option on the above menu:  ')
 
 def postMessageRaw():
 
@@ -247,7 +294,6 @@ def logOut(s):
 
 
 def login():
-
 	userOK = False
 	#create an INET, STREAMing socket
 	try:
@@ -274,8 +320,9 @@ def login():
 	print 'Welcome to pyTwit! Enter your username and password.\n' 
 
 	while userOK == False :  
-		uname = raw_input( 'username: ' )
-		pwd = getpass.getpass()
+		uname = selectRecv( s, 'username: ' )
+		pwd = selectRecv(s, 'password:')
+		#pwd = getpass.getpass()
 
 		s.send(uname)
 		time.sleep(1)
