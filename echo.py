@@ -391,6 +391,7 @@ def connNewClient(conn):
 		else:
 			msg = str(0)
 
+		print 'sending msg'
 		conn.send(msg)
 		time.sleep(1)
 
@@ -433,8 +434,11 @@ def commandLine(cmd):
 
 
 def setupSock():
-	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
 	CONNECTION_LIST = []
+
+	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
 	try:
 	    server_socket.bind((HOST, PORT))
 	except socket.error , msg:
@@ -442,7 +446,7 @@ def setupSock():
 	
 	server_socket.listen(10)
 	CONNECTION_LIST.append(server_socket)
-	#create new thread here
+
 	while 1:
 		
 		read_sockets,write_sockets,error_sockets = select.select(CONNECTION_LIST , [], [] );		
@@ -459,13 +463,14 @@ def setupSock():
 			# 	commandLine(cmd)
 
 			else:
-				connNewClient(conn)
+				connNewClient ,(conn,)
 
 
 		# conn, addr = server_socket.accept()
 		# start_new_thread(connNewClient ,(conn,))
 
-		
+						#connNewClient(conn)
+
 
 
 
