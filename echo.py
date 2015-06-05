@@ -383,6 +383,9 @@ def connNewClient(conn):
 		userTemp = conn.recv(1024)
 		pwdTemp = conn.recv(1024)
 
+		print userTemp
+		print pwdTemp
+
 		userOK = checkUserList(USERLIST,userTemp, pwdTemp) 
 		if userOK:
 			msg = str(1)
@@ -472,4 +475,4 @@ USERLIST = []
 
 USERLIST = userNameDeclare()
 start_new_thread(setupSock, ())
-commandLine()
+#commandLine()

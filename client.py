@@ -7,10 +7,56 @@ import select
 import time
 import os
 import getpass
+from getCh import *
 import curses
 from thread import *
 
-#this is the threading version (Super inefficient -> need to implement select on master)
+def custPrompt(s, prompt):
+	if prompt:
+		print prompt
+	
+
+	socket_list = [sys.stdin, s]
+	read_sockets,write_sockets,error_sockets = select.select(socket_list , [], [] )		
+	
+	for sock in read_sockets:
+		if sock == s:
+			data = sock.recv(4096)
+			#time.sleep(1)
+			if data:
+				print 'broadcast ok!'
+		
+			 
+			else:
+				sys.stdout.write("\x1B[2K\r")
+				sys.stdout.write(data + '\n')
+				sys.stdout.write(prompt)
+
+		else:
+			return sys.stdin.readline().strip()
+
+
+	# else:
+	# 	stdout write (flag)
+	# 	write data 
+	# 	write prompt
+	# 	flush
+def custRecv(s) :
+
+#
+	socket_list = [sys.stdin, s]
+	read_sockets,write_sockets,error_sockets = select.select(socket_list , [], [] )		
+	
+	for sock in read_sockets:
+		if sock == s:
+			data = s.recv(4096)
+
+			if data:
+
+				return data
+			
+
+
 
 def checkOnlineTweet(s): #create new thread that accepts a specific flag
 	
@@ -19,7 +65,7 @@ def checkOnlineTweet(s): #create new thread that accepts a specific flag
 		realtTimeFlag = ''
 		try:
 			s.settimeout(1)
-			realtTimeFlag = s.recv(4096)
+			realtTimeFlag = custRecv(s)
 		except (socket.timeout, socket.error, errno.errorcode[11]):
 			pass
 			
@@ -45,10 +91,12 @@ def runMenu(s):
 	print '\t6. See followers.'
 	print '\t7. logout. \n'
 
-	sendInput = raw_input(	'Please select action: ' )
+	#sendInput = custPrompt(s,	'Please select action: ' )
+	sendInput = custPrompt(s, 'Please select action: ')
 	print '\n' + '='*80 + '\n\n'
 
-	s.send( sendInput)
+	#s.send( 'M ' sendInput)
+
 	if sendInput == '1':
 		clientSeeOffline(s)
 	elif sendInput == '2':
@@ -70,11 +118,11 @@ def runMenu(s):
 
 def seeAllOff(s):
 	
-	allOff = s.recv(4096)
+	allOff = custRecv(s)
 	print allOff +  '\n'
 
 def seeOneSubOff(s):
-	subs = s.recv(1024)
+	subs = custRecv(s)
 	print subs
 
 	if subs == '\tYou are not subscribed to anyone! \n':
@@ -82,11 +130,14 @@ def seeOneSubOff(s):
 		return
 
 	else:
-		usermsg = raw_input('select which user\'s new messages you would like to see: ')
+		usermsg = custPrompt(s,'select which user\'s new messages you would like to see: ')
 		s.send(usermsg)
 
-		tweetsUser = s.recv(1024)
+		tweetsUser = custRecv(s)
 		print tweetsUser
+
+
+
 		
 def clientSeeOffline(s):
 	os.system('clear')
@@ -94,7 +145,7 @@ def clientSeeOffline(s):
 	print '\t2. See all messages of a user you are subscribed to.'
 	print '\t3. Return to menu.'
 
-	option = raw_input('Select an option: ')
+	option = custPrompt(s,'Select an option: ')
 	while 1:
 		s.send(option)
 		if option == '1':
@@ -108,16 +159,16 @@ def clientSeeOffline(s):
 			return
 
 		else:
-			option = raw_input( 'Invalid input. Please slelect an option on the above menu: ')
+			option = custPrompt(s, 'Invalid input. Please slelect an option on the above menu: ')
 
 
 def clientAddSub(s):
 	os.system('clear')
-	requestUser = raw_input('Type username of another user you would like to subscrible to: ')
+	requestUser = custPrompt(s,'Type username of another user you would like to subscrible to: ')
 	
 	while 1:
 		s.send(requestUser)
-		userFound = s.recv(1024)
+		userFound = custRecv(s)
 		time.sleep(1)
 
 		#print userFound
@@ -126,15 +177,15 @@ def clientAddSub(s):
 			return None
 
 		elif userFound == 'duplicate':
-			requestUser = raw_input( 'User already exists in subscription list. Please Enter a new user: ')
+			requestUser = custPrompt(s, 'User already exists in subscription list. Please Enter a new user: ')
 
 		else:
-			requestUser = raw_input( 'User not found. Please Enter an exisitng user: ' )
+			requestUser = custPrompt(s, 'User not found. Please Enter an exisitng user: ' )
 
 def clientDeleteSub(s):
 	os.system('clear')
 
-	subList = s.recv(1024)
+	subList = custRecv(s)
 	time.sleep(1)
 
 	if subList == 'emptyList':
@@ -147,12 +198,12 @@ def clientDeleteSub(s):
 	#get list of subs and print them
 	print subList
 
-	removeCanidate = raw_input( 'which subscription would you like to remove? ')
+	removeCanidate = custPrompt(s, 'which subscription would you like to remove? ')
 	
 	while 1:
 		
 		s.send(removeCanidate)
-		deleteStatus = s.recv(1024)
+		deleteStatus = custRecv(s)
 		time.sleep(1)
 
 		print deleteStatus
@@ -161,7 +212,7 @@ def clientDeleteSub(s):
 			return None
 
 		else:
-			removeCanidate = raw_input( 'User not found. Please enter a valid name from the list: ')
+			removeCanidate = custPrompt(s, 'User not found. Please enter a valid name from the list: ')
 
 
 
@@ -171,7 +222,7 @@ def clientEditSubs(s):
 		print '\t1. Add a new subscription. '
 		print '\t2. Delete an existing subscription. '
 		print '\t3. Return to menu'
-		subInput = raw_input( 'Select an option: ')
+		subInput = custPrompt(s,'Select an option: ')
 			
 		while 1:
 			if subInput is '1':
@@ -186,7 +237,7 @@ def clientEditSubs(s):
 				s.send(subInput)
 				return
 			else:
-				subInput = raw_input( 'Invalid input. Please slelect an option on the above menu:  ')
+				subInput = custPrompt( s, 'Invalid input. Please slelect an option on the above menu:  ')
 
 def postMessageRaw():
 
@@ -197,7 +248,7 @@ def postMessageRaw():
 		text = ""
 		stopword = ""
 		while True:
-		    line = raw_input()
+		    line = custPrompt(s,)
 		    if line.strip() == stopword:
 		        break
 		    text += "%s\n" % line
@@ -210,10 +261,10 @@ def postMessageRaw():
 			return text
 
 def clientFindHashtag(s):
-	tagString = raw_input( 'Enter name of hashtag without the "#": ' )
+	tagString = custPrompt(s, 'Enter name of hashtag without the "#": ' )
 	s.send(tagString)
 
-	allMatchingTweets = s.recv(4096)
+	allMatchingTweets = custRecv(s)
 	time.sleep(1)
 
 	os.system('clear')
@@ -226,13 +277,13 @@ def clientFindHashtag(s):
 	return 
 
 def clientSeeSubscriptions(s):
-	subscriptions = s.recv(4096)
+	subscriptions = custRecv(s)
 	print subscriptions
 	return None
 
 def clientSeeFollowers(s):
 
-	followers = s.recv(4096)
+	followers = custRecv(s)
 	print followers
 	return None
 
@@ -248,7 +299,6 @@ def logOut(s):
 
 
 def login():
-
 	userOK = False
 	#create an INET, STREAMing socket
 	try:
@@ -273,22 +323,24 @@ def login():
 
 
 	print 'Welcome to pyTwit! Enter your username and password.\n' 
-
 	while userOK == False :  
-		uname = raw_input( 'username: ' )
-		pwd = getpass.getpass()
+		uname = custPrompt( s, 'username: ' )
+		pwd = custPrompt(s, 'password:')
+		#pwd = getpass.getpass()
 
-		s.send(uname)
+		s.send(  uname)
 		time.sleep(1)
-		s.send(pwd)
+		s.send( pwd)
 		time.sleep(1)
-		vMsg = s.recv(1024)
+		vMsg = custRecv(s)
+
+		print vMsg
 
 		if vMsg == str(1):
 			userOK = True
 			os.system('clear')
 			print 'Welcome back, ' + uname + '!\n'
-			msgNum = s.recv(1024)
+			msgNum = custRecv(s)
 			time.sleep(1)
 			print 'You have ' + msgNum + ' unread messages.\n\n'
 
@@ -300,4 +352,3 @@ def login():
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 login()
-
