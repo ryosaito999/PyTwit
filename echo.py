@@ -85,10 +85,10 @@ def checkUserList(ulist, userTemp, pwdTemp):
 def userNameDeclare():
 	#Declare User List Here!
 	userlist = []
-	user1 = User("gintoki", "ichigo")
-	user2 = User("kagura", "sadaharu")
+	user1 = User("stephanie", "tong")
+	user2 = User("naruto", "nina")
 	user3 = User("ryota", "saito")
-	user4 = User("fruitspunchsamurai", "otae")
+	user4 = User("hello", "world")
 	userlist.append(user1);
 	userlist.append(user2);
 	userlist.append(user3);

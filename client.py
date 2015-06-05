@@ -10,6 +10,8 @@ import getpass
 import curses
 from thread import *
 
+#this is the threading version (Super inefficient -> need to implement select on master)
+
 def checkOnlineTweet(s): #create new thread that accepts a specific flag
 	
 	while 1:
