@@ -16,6 +16,8 @@ class User:
 		self.offlineQueue = [] #your offline tweet queue -> flush on logout
 		self.followersList = [] #your followers
 		self.onlineQueue = []
+		self.port = 0 #WOOOOOOOOOOOW DIS SO EZ
+
 
 	def userVerify(self, u, p):
 		if u == self.uname and p == self.pwd:
@@ -33,8 +35,7 @@ class User:
 				user.offlineQueue.append(submittedTweet)
 			elif user.status == 'online' :
 				#start background thread that sends tweet to client without interrrupting server
-				#threadOnlineSender(user, conn, submittedTweet)
-				user.onlineQueue.append(submittedTweet)
+				sendToPorts(user, printSingleTweet(submittedTweet))
 
 		return None	
 
@@ -74,6 +75,9 @@ class Tweet:
 
 #Define main functions here!
 
+def sendToPorts(user, tweet):
+
+	user.port.send(tweet)
 
 def checkUserList(ulist, userTemp, pwdTemp): 
 	for user in ulist:
@@ -106,8 +110,7 @@ def DuplicateSub(curUser, username):
 
 def runAction(conn, curUser):
 
-	n = conn.recv(1024)
-	time.sleep(1)
+	n = conn.recv(1024)	
 	if n == '1':
 		serverSeeOffline(conn, curUser)
 	elif n == '2': 
@@ -132,6 +135,11 @@ def printTweet(tweet_list):
 	for tweet in tweet_list:
 		messageOutput += '='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n'
 
+	return messageOutput
+
+def printSingleTweet(tweet):
+	messageOutput = ''
+	messageOutput += '='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n'
 	return messageOutput
 
 def getUser(userWanted, user_list):
@@ -195,6 +203,9 @@ def addSub(conn, curUser):
 		dup = False
 		requestedUser = conn.recv(4096)
 
+		if requestedUser == '-1':
+			return
+
 		for user in USERLIST:
 			if user.uname == requestedUser and  user.uname != curUser.uname:
 
@@ -241,6 +252,9 @@ def delSub(conn, curUser):
 
 	while 1:
 		delCan = conn.recv(1024)
+
+		if delCan == '-1':
+			return None
 		time.sleep(1)
 		for u in curUser.subList:
 			
@@ -256,8 +270,6 @@ def delSub(conn, curUser):
 def serverEditSub(conn, curUser):
 
 	subSelection = conn.recv(1024)
-	time.sleep(1)
-	
 	if subSelection == '1':
 		addSub(conn, curUser)
 
@@ -284,6 +296,10 @@ def serverPostMsg(conn, curUser):
 	#wait for message to be tweeted
 	msg = conn.recv(4096)
 	time.sleep(1)
+
+	if msg == '-1':
+		return
+
 	newTweet = Tweet(msg, curUser)
 	curUser.addTweet(newTweet, conn)
 
@@ -316,6 +332,11 @@ def serverSearchHashtag(conn, curUser):
 
 	requsetedTag = conn.recv(1024)
 	time.sleep(1)
+
+	if requsetedTag == '-1':
+		return 
+
+
 	allTweets  = getTweetsAllUsers(requsetedTag)
 	conn.sendall(allTweets)
 	return None
@@ -357,34 +378,16 @@ def serverLogout(curUser):
 
 	return -1
 
-def checkOnlineQueue(curUser,conn):
-
-	while 1:
-		if len(curUser.onlineQueue) != 0: 
-			print 'sending msg'
-			tweet = curUser.onlineQueue[0] 
-			msg =''
-			
-			s.send('__realTime__')
-			ack = conn.recv(1024)
-			if ack == 'readyRecv':
-
-			 	msg += '\n' +' ='*80 + '\n' + tweet.owner.uname + '   ' + time.asctime(time.localtime(tweet.timestamp ) )+ ' : \n\n\t' +  tweet.message + '\n' + '='*80 + '\n'
-				conn.send( msg)
-				curUser.onlineQueue = []
-				time.sleep(2)
-			
-
 def connNewClient(conn):
 	userVerify = False
 
 	while userVerify is False:
 		
 		userTemp = conn.recv(1024)
+		time.sleep(1)
 		pwdTemp = conn.recv(1024)
+		time.sleep(1)
 
-		print userTemp
-		print pwdTemp
 
 		userOK = checkUserList(USERLIST,userTemp, pwdTemp) 
 		if userOK:
@@ -401,6 +404,7 @@ def connNewClient(conn):
 
 
 	conn.send(str(sendUserMsgNum(userOK)))
+	userOK.port = conn
 	global ONLINEUSERS 
 	ONLINEUSERS += 1
 
@@ -451,8 +455,7 @@ def setupSock():
 
 	#create new thread here
 	while 1:
-
-		conn, addr = s.accept()
+		conn, addr = s.accept()	
 		start_new_thread(connNewClient ,(conn,))
 
 
@@ -474,5 +477,5 @@ USERLIST = []
 
 
 USERLIST = userNameDeclare()
-start_new_thread(setupSock, ())
-#commandLine()
+start_new_thread( setupSock, ())
+commandLine()

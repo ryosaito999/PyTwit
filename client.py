@@ -11,39 +11,39 @@ from getCh import *
 import curses
 from thread import *
 
+
+
 def custPrompt(s, prompt):
-	if prompt:
-		print prompt
-	
 
-	socket_list = [sys.stdin, s]
-	read_sockets,write_sockets,error_sockets = select.select(socket_list , [], [] )		
-	
-	for sock in read_sockets:
-		if sock == s:
-			data = sock.recv(4096)
-			#time.sleep(1)
-			if data:
-				print 'broadcast ok!'
+	# if prompt == 'password:':
+	# 	return getpass.getpass()
+	# try:
+
+		if prompt:
+			print prompt
+		socket_list = [sys.stdin, s]
+		read_sockets,write_sockets,error_sockets = select.select(socket_list , [], [] )		
 		
-			 
+		for sock in read_sockets:
+			if sock == s:
+				data = sock.recv(4096)
+				#time.sleep(1)
+				if data:
+
+					sys.stdout.write("\x1B[2K\r")
+					sys.stdout.write(data + '\n')
+					sys.stdout.write(prompt)
+					return 	sys.stdin.readline().strip() 
 			else:
-				sys.stdout.write("\x1B[2K\r")
-				sys.stdout.write(data + '\n')
-				sys.stdout.write(prompt)
+				return 	sys.stdin.readline().strip() 
 
-		else:
-			return sys.stdin.readline().strip()
+	# except KeyboardInterrupt:
+	# 	print '\n'
+	# 	return '-1'
 
-
-	# else:
-	# 	stdout write (flag)
-	# 	write data 
-	# 	write prompt
-	# 	flush
 def custRecv(s) :
 
-#
+#add expecting 
 	socket_list = [sys.stdin, s]
 	read_sockets,write_sockets,error_sockets = select.select(socket_list , [], [] )		
 	
@@ -95,14 +95,14 @@ def runMenu(s):
 	sendInput = custPrompt(s, 'Please select action: ')
 	print '\n' + '='*80 + '\n\n'
 
-	#s.send( 'M ' sendInput)
+	s.send(sendInput)
 
 	if sendInput == '1':
 		clientSeeOffline(s)
 	elif sendInput == '2':
 		clientEditSubs(s)
 	elif sendInput == '3':
-		tweet = postMessageRaw()
+		tweet = postMessageRaw(s)
 		s.sendall(tweet)
 	elif sendInput == '4':
 		clientFindHashtag(s)
@@ -168,6 +168,9 @@ def clientAddSub(s):
 	
 	while 1:
 		s.send(requestUser)
+		if requestUser == '-1':
+			return
+
 		userFound = custRecv(s)
 		time.sleep(1)
 
@@ -198,10 +201,9 @@ def clientDeleteSub(s):
 	#get list of subs and print them
 	print subList
 
-	removeCanidate = custPrompt(s, 'which subscription would you like to remove? ')
+	removeCanidate = custPrompt(s, 'which subscription would you like to remove? Cntrl + C to go back to menu. ')
 	
 	while 1:
-		
 		s.send(removeCanidate)
 		deleteStatus = custRecv(s)
 		time.sleep(1)
@@ -239,16 +241,20 @@ def clientEditSubs(s):
 			else:
 				subInput = custPrompt( s, 'Invalid input. Please slelect an option on the above menu:  ')
 
-def postMessageRaw():
+def postMessageRaw(s):
 
-	print 'Type a tweet under 140 characters! Press Enter twice to post. Hit esc at anytime to cancel. \n'
+	print 'Type a tweet under 140 characters! Press Enter twice to post. Hit cntrl + c at anytime to cancel. \n'
 	msgLen = False
 
 	while msgLen is False:
 		text = ""
 		stopword = ""
 		while True:
-		    line = custPrompt(s,)
+		    line = custPrompt(s,'')
+
+		    if line == '-1':
+		    	return '-1'
+
 		    if line.strip() == stopword:
 		        break
 		    text += "%s\n" % line
@@ -261,14 +267,16 @@ def postMessageRaw():
 			return text
 
 def clientFindHashtag(s):
-	tagString = custPrompt(s, 'Enter name of hashtag without the "#": ' )
+	tagString = custPrompt(s, 'Enter name of hashtag without the "#": Cntrl + C to go back to menu' )
 	s.send(tagString)
+
+	if tagString == '-1':
+		return
 
 	allMatchingTweets = custRecv(s)
 	time.sleep(1)
 
 	os.system('clear')
-
 	if allMatchingTweets == 'noneFound':
 		print '\tNo tweets with #' + tagString + ' found in database.'
 
@@ -325,13 +333,12 @@ def login():
 	print 'Welcome to pyTwit! Enter your username and password.\n' 
 	while userOK == False :  
 		uname = custPrompt( s, 'username: ' )
-		pwd = custPrompt(s, 'password:')
-		#pwd = getpass.getpass()
+		s.send( uname)
 
-		s.send(  uname)
-		time.sleep(1)
+		pwd = custPrompt(s, 'password:')
+		
+		
 		s.send( pwd)
-		time.sleep(1)
 		vMsg = custRecv(s)
 
 		print vMsg
